@@ -1,0 +1,180 @@
+способный	able
+точный, аккуратный	accurate
+реальный, действующий	actual
+дополнительный	additional
+испуганный	afraid
+агрессивный	aggressive
+живой	alive
+сердитый	angry
+тревожный	anxious
+автоматический	automatic
+доступный	available
+осведомлённый	aware
+плохой	bad
+основной, базовый	basic
+лучший	best
+большой	big
+скучный	boring
+способный, умелый	capable
+осторожный	careful
+центральный	central
+определенный, конкретный	certain
+гражданский	civil
+ясный, чистый	clear
+близкий, тесный	close
+холодный	cold
+общий	common
+уверенный	confident
+сознательный	conscious
+последовательный	consistent
+критический	critical
+культурный	cultural
+любопытный	curious
+текущий	current
+опасный	dangerous
+темный	dark
+мёртвый	dead
+приличный, порядочный	decent
+демократический	democratic
+отчаянный, безнадежный	desperate
+различный	different
+трудный	difficult
+определенный, отчетливый	distinct
+ранний	early
+восточный	eastern
+лёгкий	easy
+экономический	economic
+образовательный	educational
+эффективный	efficient
+эмоциональный	emotional
+целый	entire
+каждый	every
+захватывающий, волнующий	exciting
+существующий	existing
+известный	famous
+конечный	final
+финансовый	financial
+прекрасный	fine
+иностранный	foreign
+бывший	former
+свободный	free
+дружественный	friendly
+полный	full
+всеобщий, главный	general
+глобальный	global
+хороший	good
+большой	great
+виновный	guilty
+счастливый	happy
+жёсткий, усердный	hard
+здоровый	healthy
+высокий	high
+исторический	historical
+горячий	hot
+огромный	huge
+человеческий	human
+голодный	hungry
+непосредственный, срочный	immediate
+важный	important
+невозможный	impossible
+выразительный, впечатляющий	impressive
+неофициальный	informal
+внутренний	inner
+интересный	interesting
+международный	international
+известный	known
+большой, широкий	large
+поздний, последний	late
+левый	left
+правовой, законный	legal
+вероятный, возможный	likely
+маленький	little
+местный	local
+одинокий	lonely
+длинный	long
+низкий	low
+счастливый, удачный	lucky
+основной	main
+главный, основной	major
+медицинский	medical
+умственный	mental
+военный	military
+национальный	national
+естественный	natural
+нервный	nervous
+новый	new
+милый, приятный	nice
+многочисленный	numerous
+очевидный	obvious
+старый	old
+открытый	open
+прошлый, прошедший	past
+личный	personal
+физический	physical
+приятный, веселый	pleasant
+политический	political
+бедный	poor
+популярный	popular
+возможный	possible
+мощный	powerful
+практичный	practical
+частный	private
+психологический	psychological
+общественный	public
+чистый	pure
+редкий	rare
+готовый	ready
+действительный, реальный	real
+реалистичный	realistic
+разумный	reasonable
+недавний	recent
+подходящий	relevant
+религиозный	religious
+замечательный, выдающийся	remarkable
+ответственный	responsible
+прямой, верный	right
+испуганный	scared
+серьезный	serious
+суровый	severe
+сексуальный, половой	sexual
+короткий	short
+значительный	significant
+похожий	similar
+простой	simple
+единственный	single
+маленький	small
+социальный	social
+жалкий, печальный	sorry
+специальный, особый	special
+сильный	strong
+существенный, значительный	substantial
+успешный	successful
+внезапный	sudden
+достаточный	sufficient
+подходящий	suitable
+конечно	sure
+подозрительный	suspicious
+высокий	tall
+технический	technical
+страшный	terrible
+крошечный	tiny
+традиционный	traditional
+верный	true
+типичный	typical
+уродливый	ugly
+неспособный	unable
+несправедливый	unfair
+несчастный	unhappy
+соединённый	united
+маловероятный	unlikely
+необычный	unusual
+использованный	used
+полезный	useful
+различный	various
+видимый	visible
+слабый	weak
+целый	whole
+готовый	willing
+замечательный	wonderful
+неправильный	wrong
+молодой	young

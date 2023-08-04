@@ -180,7 +180,7 @@ namespace WDX {
 		if (ProfileNames.size() == 0) return;
 
 		for (std::string binfile : ProfileNames) {
-			binfile.erase(binfile.size() - 4);
+			binfile.erase(binfile.size() - 6);
 			ProfileList->Items->Add(gcnew System::String(binfile.c_str()));
 		}
 	}

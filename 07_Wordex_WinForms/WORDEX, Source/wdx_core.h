@@ -73,7 +73,15 @@ namespace WDX {
 		const std::string kDirectoryProfiles_{ "WDX_PROFILES/" };
 	public:
 		const std::string kDeckFormat_{ ".txt" };
-		const std::string kProfileFormat_{ ".bin" };
+
+#ifdef _WIN64
+		// Profile format specific to x64 architecture
+		const std::string kProfileFormat_{ ".bin64" };
+#else
+		// Profile format specific to x86 architecture
+		const std::string kProfileFormat_{ ".bin86" };
+#endif
+
 	private:
 		std::string CurrentWordOne_;
 		std::string CurrentWordTwo_;
