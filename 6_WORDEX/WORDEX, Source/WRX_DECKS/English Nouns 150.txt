@@ -1,0 +1,150 @@
+действие	action
+деятельность, активность, мероприятие	activity
+возраст	age
+воздух	air
+животное, зверь	animal
+область, участок	area
+авторитет, крупный специалист, орган власти	authority
+банк	bank
+тело	body
+книга	book
+здание	building
+дело, работа, бизнес	business
+автомобиль, машина	car
+случай, дело, пример	case
+центр	centre
+век	century
+сдача	change
+ребёнок	child
+город	city
+сообщество, общество	community
+компания	company
+состояние, условие	condition
+контроль	control
+страна	country
+курс, блюдо	course
+суд	court
+день	day
+решение	decision
+развитие	development
+дверь	door
+образование	education
+эффект	effect
+конец	end
+пример	example
+опыт	experience
+глаз	eye
+лицо	face
+факт	fact
+семья	family
+отец, папа	father
+поле, сфера деятельности	field
+фигура, цифра	figure
+квартира	flat
+еда	food
+форма	form
+друг	friend
+игра	game
+девочка	girl
+правительство	government
+группа	group
+парень, молодой человек	guy
+рука, кисть	hand
+голова	head
+здоровье	health
+история	history
+дом	home
+час	hour
+дом	house
+идея	idea
+индустрия, производство	industry
+информация	information
+интерес	interest
+работа, задание	job
+ребёнок	kid
+вид, сорт	kind
+язык	language
+закон	law
+уровень	level
+жизнь	life
+линия, черта, граница, очередь	line
+любовь	love
+мужчина	man
+менеджер, управляющий	manager
+манера, поведение	manner
+рынок	market
+миллион	million
+ум, разум	mind
+минута	minute
+момент	moment
+деньги	money
+месяц	month
+утро	morning
+мать, мама	mother
+имя, название	name
+необходимость, нужда	need
+ночь	night
+номер, число, цифра	number
+офис	office
+возможность, шанс, перспектива	opportunity
+заказ, порядок, приказ	order
+бумага	paper
+родитель	parent
+часть	part
+вечеринка, тусовка	party
+люди	people
+период	period
+человеческий, личность	person
+место	place
+план	plan
+пункт, точка	point
+полиция	police
+политика, стратегия, принципы	policy
+положение, должность, позиция	position
+власть, сила	power
+президент	president
+цена	price
+проблема	problem
+процесс	process
+программа	programme
+проект	project
+качество	quality
+вопрос	question
+причина	reason
+связь, отношения	relationship
+отчет, доклад	report
+исследование	research
+отдых	rest
+результат	result
+дорога, путь	road
+комната	room
+школа	school
+чувство	sense
+сервис, услуга, служба	service
+сторона	side
+общество	society
+персонал, штат сотрудников	staff
+история, рассказ	story
+улица	street
+студент	student
+изучение, кабинет, учёба	study
+поддержка	support
+система	system
+стол	table
+учитель	teacher
+команда	team
+семестр, период, термин	term
+вещь, предмет	thing
+время	time
+тип	type
+применение	use
+точка зрения, вид	view
+война	war
+вода	water
+способ, путь, дорога	way
+неделя	week
+женщина	woman
+слово	word
+работа, труд	work
+мир	world
+год	year

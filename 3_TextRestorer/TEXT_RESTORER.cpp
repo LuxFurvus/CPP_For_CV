@@ -1,7 +1,7 @@
 # include<iostream>
 # include<fstream>
 # include<string>
-#include <thread>
+#include <chrono>
 
 const std::string FileName = "IO.txt";
 
@@ -44,13 +44,15 @@ std::string NoDoubleSpace(const std::string& TextToProcess) {//Removes double wh
 bool FirstTime = 0;
 void AppIsWorking() {
 	if (FirstTime == 0) {
-		std::cout << "\n==============\nThe program is working.\n\nPut a PDF-crippled text in " << FileName << ", reopen it and retrieve a converted text...\n==============\n";
+		std::cout 
+			<< "\n==============\nThe program is working.\n\nPut a PDF-crippled text in " 
+			<< FileName 
+			<< ", reopen it and retrieve a converted text...\n==============\n";
 		FirstTime = 1;
 	}
 }
 
 int main() {
-
 HandleTheText:
 
 	//Get the text from file or create the file if there is no one
@@ -95,7 +97,7 @@ HandleTheText:
 
 	GetLines.close();
 
-	// Rerun the app 
+	// Rerun the app
 	AppIsWorking();
 	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	goto HandleTheText;

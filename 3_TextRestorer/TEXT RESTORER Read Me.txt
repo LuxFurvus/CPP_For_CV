@@ -5,7 +5,7 @@ Read Me (ENG)
 =====================================================
 When we copy text from non-adapted PDF files, the text we get isn’t not divided into paragraphs (as it should be in a normal text), but into lines corresponding to the width of the PDF page.
 It’s hard to use a text that broken. We can’t insert it into a document or translate it with Google Translator. We need to get rid of extra paragraphs and insert the new ones.
-It’s a simple task in a single instance. But when we need dozens or hundreds of such fragments, a huge chunk of time will be wasted.
+It’s a simple task in a single instance. But when we need to handle dozens or hundreds of such fragments, a huge chunk of time will be wasted.
 
 "TEXT RESTORER" does whole the work for us:
 1. Copy a piece of a text from a PDF and paste it into the IO.txt file.
@@ -19,9 +19,9 @@ TEXT_RESTORER.exe will run till we close it. It processes the content of IO.txt 
 =====================================================
 Read Me (RUS)
 =====================================================
-При копировании текста из неадаптированных PDF-файлов мы получаем текст, разбитый не на абзацы (как положено у нормального текста, а на строки, соответствующие ширине PDF-страницы).
+При копировании текста из неадаптированных PDF-файлов мы получаем текст, разбитый не на абзацы (как положено у нормального текста), а на строки, соответствующие ширине PDF-страницы.
 Использование  полученного таким образом теста (вставка в документ или перевод в Google Translator) требует предварительного удаления лишних абзацев и простановки нужных.
-В единичном случае это простая задача. Но когда работа требует обработки отрывков из десятков и сотен PDF-файлов, самостоятельная обработка ведет к существенной потере времени.
+В единичном случае это простая задача. Но когда работа требует обработки отрывков из десятков и сотен PDF-файлов, самостоятельная обработка каждого ведет к существенной потере времени.
 
 «TEXT RESTORER» автоматизирует обработку текстов из PDF.
 
