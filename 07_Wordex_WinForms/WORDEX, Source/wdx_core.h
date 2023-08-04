@@ -52,7 +52,7 @@ namespace WDX {
 
 		private:
 			inline Profile() : ProfileName("%%%"), ProfileScore(0), LettersOnly(false) {}
-			inline Profile(std::string NewName, int NewScore, bool NewLettersOnly = false) {
+			inline Profile(std::string NewName, int NewScore, bool NewLettersOnly = false) noexcept {
 				ProfileName = NewName;
 				ProfileScore = NewScore;
 				LettersOnly = NewLettersOnly;
@@ -103,21 +103,21 @@ namespace WDX {
 		////////////////////////ACCESSORS///////////////////////////
 		//////////////////////////////////////////////////////////////
 	public:
-		inline static GameCoreClass& GetCore() {
+		inline static GameCoreClass& GetCore() noexcept {
 			static GameCoreClass GameCore;
 			return GameCore;
 		}
 
-		inline void SetAccessPoint(AccessPoint Point) {
+		inline void SetAccessPoint(AccessPoint Point) noexcept {
 			AccessWindow_ = Point;
 		}
 
-		inline void SetDeckCurrent() {
+		inline void SetDeckCurrent() noexcept {
 			CurrentDeck_ = &CurrentProfile_.AllLoadedDecks.begin()->second;
 			CurrentDeckName_ = CurrentProfile_.AllLoadedDecks.begin()->first;
 		}
 
-		inline void SetDelimiter(char w = '\t') {
+		inline void SetDelimiter(char w = '\t') noexcept {
 			if (w == '\0') {
 				ProfileDelimiter_ = '\t';
 			}
@@ -126,7 +126,7 @@ namespace WDX {
 
 		//////////////////////////////////////////////////////////////
 	public:
-		inline bool GetDirProfiles(std::filesystem::path& DirProfiles) const {
+		inline bool GetDirProfiles(std::filesystem::path& DirProfiles) const noexcept {
 			std::filesystem::path DirPath(kDirectoryProfiles_);
 			DirProfiles = DirPath;
 			if (std::filesystem::exists(DirPath)
@@ -136,7 +136,7 @@ namespace WDX {
 			return false;
 		}
 
-		inline bool GetDirDecks(std::filesystem::path& DirDecks) const {
+		inline bool GetDirDecks(std::filesystem::path& DirDecks) const noexcept {
 			std::filesystem::path DirPath(kDirectoryDecks_);
 			DirDecks = DirPath;
 			if (std::filesystem::exists(DirPath)
@@ -148,31 +148,31 @@ namespace WDX {
 
 		//////////////////////////////////////////////////////////////
 	public:
-		inline AccessPoint GetAccessPoint() const {
+		inline AccessPoint GetAccessPoint() const noexcept {
 			return AccessWindow_;
 		}
-		inline const std::string& GetWordFirst() const {
+		inline const std::string& GetWordFirst() const noexcept {
 			return CurrentWordOne_;
 		}
-		inline const std::string& GetWordSecond() const {
+		inline const std::string& GetWordSecond() const noexcept {
 			return CurrentWordTwo_;
 		}
-		inline const std::string& GetProfileName()const {
+		inline const std::string& GetProfileName()const noexcept {
 			return CurrentProfile_.ProfileName;
 		}
-		inline const size_t GetCurrentDeckSize() const {
+		inline const size_t GetCurrentDeckSize() const noexcept {
 			return CurrentDeck_->size();
 		}
-		inline const std::string GetCurrentDeckName() const {
+		inline const std::string GetCurrentDeckName() const noexcept {
 			return CurrentDeckName_;
 		}
-		inline const std::vector<WordPair>* GetCurrentDeck() const {
+		inline const std::vector<WordPair>* GetCurrentDeck() const noexcept {
 			return CurrentDeck_;
 		}
-		inline const int& GetScore() const {
+		inline const int& GetScore() const noexcept {
 			return CurrentProfile_.ProfileScore;
 		}
-		inline size_t GetLoadedDecksNum() const {
+		inline size_t GetLoadedDecksNum() const noexcept {
 			return CurrentProfile_.AllLoadedDecks.size();
 		}
 
@@ -180,34 +180,34 @@ namespace WDX {
 		///////////////////CORE, SCORE AND PROFILE////////////////////
 		//////////////////////////////////////////////////////////////
 	public:
-		inline void AddScorePoints(int ScoreChange) {
+		inline void AddScorePoints(int ScoreChange) noexcept {
 			CurrentProfile_.ProfileScore += ScoreChange;
 		}
 
-		void ResetGameCore();
-		bool MakeNewProfile(const std::string& NewName);
-		bool FormProlileList(std::vector<std::string>& ProfileNames);
+		void ResetGameCore() noexcept;
+		bool MakeNewProfile(const std::string& NewName) noexcept;
+		bool FormProlileList(std::vector<std::string>& ProfileNames) noexcept;
 
 		//////////////////////////////////////////////////////////////
 		////////////////////////SAVE & LOAD///////////////////////////
 		//////////////////////////////////////////////////////////////
 	public:
-		bool SaveProfile();
-		bool LoadProfile(const std::string& ProfileName);
+		bool SaveProfile() noexcept;
+		bool LoadProfile(const std::string& ProfileName) noexcept;
 
 		//////////////////////////////////////////////////////////////
 		////////////////////////WORD FUNCTIONS////////////////////////
 		//////////////////////////////////////////////////////////////
 	public:
-		std::string GetWordHinted(uint8_t HintNum) const;
+		std::string GetWordHinted(uint8_t HintNum) const noexcept;
 
-		inline void EraseWordPair() {
+		inline void EraseWordPair() noexcept {
 			static_cast<void>(
 				CurrentDeck_->erase(CurrentDeck_->begin() + CurrentDeckIndex_)
 				);
 		}
 
-		inline void UpdateWordPair() {
+		inline void UpdateWordPair() noexcept {
 			if (CurrentDeck_->size() == 0) return;
 			srand(static_cast<unsigned int>(time(0)));
 			CurrentDeckIndex_ = rand() % CurrentDeck_->size();
@@ -220,17 +220,17 @@ namespace WDX {
 		////////////////////////DECK FUNCTIONS////////////////////////
 		//////////////////////////////////////////////////////////////
 	private:
-		std::vector<WordPair> ReadADeck(const std::string& FileName);
+		std::vector<WordPair> ReadADeck(const std::string& FileName) noexcept;
 
 	public:
-		std::vector<std::string> CollectSelectedDecks(std::unordered_set<std::string>& SelectedDeckNames);
+		std::vector<std::string> CollectSelectedDecks(std::unordered_set<std::string>& SelectedDeckNames) noexcept;
 
 		void UpdateDeckLists(
 			std::unordered_set<std::string>& DeckNamesAvailable,
 			std::unordered_set<std::string>& DeckNamesLoaded,
-			bool AvailableOnly = false);
+			bool AvailableOnly = false) noexcept;
 
-		inline void SelectDeckCurrent(const std::string& DeckName) {
+		inline void SelectDeckCurrent(const std::string& DeckName) noexcept {
 			CurrentDeck_ = &CurrentProfile_.AllLoadedDecks.at(DeckName);
 			CurrentDeckName_ = DeckName;
 			UpdateWordPair();
@@ -260,7 +260,7 @@ namespace WDX {
 
 //////////////////////////////////////////////////////////////
 
-void WDX::GameCoreClass::ResetGameCore() {
+void WDX::GameCoreClass::ResetGameCore() noexcept {
 	DeckNamesAvailable_.clear();
 	DeckNamesLoaded_.clear();
 	CurrentWordOne_.clear();
@@ -276,7 +276,7 @@ void WDX::GameCoreClass::ResetGameCore() {
 	CurrentProfile_.LettersOnly = false;
 }
 
-bool WDX::GameCoreClass::MakeNewProfile(const std::string& NewName) {
+bool WDX::GameCoreClass::MakeNewProfile(const std::string& NewName) noexcept {
 	CurrentProfile_.ProfileName = NewName;
 	if (std::filesystem::exists(kDirectoryProfiles_) == false) {
 		std::filesystem::create_directory(kDirectoryProfiles_);
@@ -294,7 +294,7 @@ bool WDX::GameCoreClass::MakeNewProfile(const std::string& NewName) {
 	}
 }
 
-bool WDX::GameCoreClass::FormProlileList(std::vector<std::string>& ProfileNames) {
+bool WDX::GameCoreClass::FormProlileList(std::vector<std::string>& ProfileNames) noexcept {
 	// Get the path to the profiles directory
 
 	std::filesystem::path DirPath;
@@ -329,8 +329,7 @@ bool WDX::GameCoreClass::FormProlileList(std::vector<std::string>& ProfileNames)
 void WDX::GameCoreClass::UpdateDeckLists(
 	std::unordered_set<std::string>& DeckNamesAvailable,
 	std::unordered_set<std::string>& DeckNamesLoaded,
-	bool AvailableOnly)
-{
+	bool AvailableOnly) noexcept {
 	//If directory is empty or non-existent, stop here
 	if (!std::filesystem::exists(kDirectoryDecks_)) {
 		std::filesystem::create_directory(kDirectoryDecks_);
@@ -369,8 +368,7 @@ void WDX::GameCoreClass::UpdateDeckLists(
 //////////////////////////////////////////////////////////////
 
 std::vector<WDX::GameCoreClass::WordPair> WDX::GameCoreClass::ReadADeck(
-	const std::string& FileName)
-{
+	const std::string& FileName) noexcept {
 	std::vector<WordPair> TempPairs;
 	std::ifstream file(FileName);
 	std::string line;
@@ -396,7 +394,7 @@ std::vector<WDX::GameCoreClass::WordPair> WDX::GameCoreClass::ReadADeck(
 
 //////////////////////////////////////////////////////////////
 
-std::vector<std::string> WDX::GameCoreClass::CollectSelectedDecks(std::unordered_set<std::string>& SelectedDeckNames) {
+std::vector<std::string> WDX::GameCoreClass::CollectSelectedDecks(std::unordered_set<std::string>& SelectedDeckNames) noexcept {
 	//Vector for empty decks or decks with wrong delimiter
 	std::vector<std::string> FailedDecks;
 
@@ -427,7 +425,7 @@ std::vector<std::string> WDX::GameCoreClass::CollectSelectedDecks(std::unordered
 
 //////////////////////////////////////////////////////
 
-std::string WDX::GameCoreClass::GetWordHinted(uint8_t HintNum) const {
+std::string WDX::GameCoreClass::GetWordHinted(uint8_t HintNum) const noexcept {
 	std::string temp;
 	for (size_t i = 0; i <= CurrentWordTwo_.length() - 1; ++i) {
 		if (i <= HintNum) {
@@ -446,7 +444,7 @@ std::string WDX::GameCoreClass::GetWordHinted(uint8_t HintNum) const {
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-bool WDX::GameCoreClass::LoadProfile(const std::string& ProfileName) {
+bool WDX::GameCoreClass::LoadProfile(const std::string& ProfileName) noexcept {
 	if (std::filesystem::exists(kDirectoryProfiles_) == false) {
 		std::filesystem::create_directory(kDirectoryProfiles_);
 	}
@@ -528,7 +526,7 @@ bool WDX::GameCoreClass::LoadProfile(const std::string& ProfileName) {
 	return true;
 }
 
-bool WDX::GameCoreClass::SaveProfile() {
+bool WDX::GameCoreClass::SaveProfile() noexcept {
 	if (std::filesystem::exists(kDirectoryProfiles_) == false) {
 		std::filesystem::create_directory(kDirectoryProfiles_);
 	}

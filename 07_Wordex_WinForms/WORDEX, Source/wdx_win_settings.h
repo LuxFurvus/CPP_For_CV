@@ -311,7 +311,15 @@ namespace WDX {
 			this->MinimumSize = System::Drawing::Size(700, 700);
 			this->Name = L"SettingsWin";
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
-			this->Text = L"WORDEX";
+
+#ifdef _WIN64
+			// Program Name specific to x64 architecture
+			this->Text = L"WORDEX 64";
+#else
+			// Program Name specific to x86 architecture
+			this->Text = L"WORDEX 86";
+#endif
+
 			this->FormClosed += gcnew System::Windows::Forms::FormClosedEventHandler(this, &SettingsWin::SettingsWin_FormClosed);
 			this->VisibleChanged += gcnew System::EventHandler(this, &SettingsWin::SettingsWin_VisibleChanged);
 			this->GroupCurrentDeck->ResumeLayout(false);
@@ -672,7 +680,7 @@ namespace WDX {
 	bool SettingsWin::CanWePlay() {
 		std::string Name = msclr::interop::marshal_as<std::string>(
 			this->TxtProfName->Text->ToString()
-			);
+		);
 
 		std::filesystem::path DirPath;
 		if (GameCoreClass::GetCore().GetDirDecks(DirPath) == false) {

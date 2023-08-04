@@ -135,7 +135,15 @@ namespace WDX {
 			this->MinimumSize = System::Drawing::Size(700, 700);
 			this->Name = L"MainMenuWin";
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterScreen;
-			this->Text = L"WORDEX";
+
+#ifdef _WIN64
+			// Program Name specific to x64 architecture
+			this->Text = L"WORDEX 64";
+#else
+			// Program Name specific to x86 architecture
+			this->Text = L"WORDEX 86";
+#endif
+
 			this->FormClosed += gcnew System::Windows::Forms::FormClosedEventHandler(this, &MainMenuWin::MainMenuWin_FormClosed);
 			this->VisibleChanged += gcnew System::EventHandler(this, &MainMenuWin::MainMenuWin_VisibleChanged);
 			this->ResumeLayout(false);

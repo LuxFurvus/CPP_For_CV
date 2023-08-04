@@ -124,7 +124,15 @@ namespace WDX {
 			this->Controls->Add(this->LabelHello);
 			this->Name = L"LoadProfileWin";
 			this->StartPosition = System::Windows::Forms::FormStartPosition::CenterParent;
-			this->Text = L"WORDEX";
+
+#ifdef _WIN64
+			// Program Name specific to x64 architecture
+			this->Text = L"WORDEX 64";
+#else
+			// Program Name specific to x86 architecture
+			this->Text = L"WORDEX 86";
+#endif
+
 			this->FormClosed += gcnew System::Windows::Forms::FormClosedEventHandler(this, &LoadProfileWin::LoadProfileWin_FormClosed);
 			this->VisibleChanged += gcnew System::EventHandler(this, &LoadProfileWin::LoadProfileWin_VisibleChanged);
 			this->ResumeLayout(false);
