@@ -8,7 +8,7 @@
 #include "CurvesClasses.h"
 
 std::vector<std::unique_ptr<Curve>> MakeVectorOne(
-	size_t CurvesNumber = 10, size_t MaxRariusSize = 100);
+	size_t CurvesNumber = 10, double MaxRariusSize = 100);
 
 void PrintCoordinates(const std::vector<std::unique_ptr<Curve>>& circles);
 

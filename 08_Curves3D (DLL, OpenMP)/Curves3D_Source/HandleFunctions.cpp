@@ -2,31 +2,32 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <random>
 #include <omp.h>
 
-std::vector<std::unique_ptr<Curve>> MakeVectorOne(size_t CurvesNumber, size_t MaxRariusSize) {
+std::vector<std::unique_ptr<Curve>> MakeVectorOne(size_t CurvesNumber, double MaxRadiusSize) {
 	// Seed the random number generator
-	std::srand(static_cast<unsigned int>(std::time(nullptr)));
+	std::mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
+	std::uniform_real_distribution<double> radiusDist(0.01, MaxRadiusSize);
+	std::uniform_real_distribution<double> stepDist(0.01, MaxRadiusSize * 0.5);
 
 	std::vector<std::unique_ptr<Curve>> curves;
 
-	size_t HelixStep = MaxRariusSize / 2;
-
 	for (size_t i = 0; i < CurvesNumber; ++i) {
-		int choice = std::rand() % 3;
+		int choice = static_cast<int>(radiusDist(rng)) % 3;
 
 		if (choice == 0) {
-			double radius = static_cast<double>(std::rand() % MaxRariusSize + 1);
+			double radius = radiusDist(rng);
 			curves.push_back(std::make_unique<Circle>(radius));
 		}
 		else if (choice == 1) {
-			double radiusX = static_cast<double>(std::rand() % MaxRariusSize + 1);
-			double radiusY = static_cast<double>(std::rand() % MaxRariusSize + 1);
+			double radiusX = radiusDist(rng);
+			double radiusY = radiusDist(rng);
 			curves.push_back(std::make_unique<Ellipse>(radiusX, radiusY));
 		}
 		else {
-			double radius = static_cast<double>(std::rand() % MaxRariusSize + 1);
-			double step = static_cast<double>(std::rand() % HelixStep + 1);
+			double radius = radiusDist(rng);
+			double step = stepDist(rng);
 			curves.push_back(std::make_unique<Helix>(radius, step));
 		}
 	}
