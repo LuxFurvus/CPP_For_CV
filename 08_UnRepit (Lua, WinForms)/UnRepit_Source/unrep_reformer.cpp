@@ -1,8 +1,12 @@
-#pragma once
+#include "unrep_reformer.h"
 
-#include "MasterWin.h"
+//////////////PRIVATE//////////////////
 
-bool UNREPEATER::MasterWin::IsSpace(wchar_t ch) {
+TextReformer TextReformer::Reformer;
+
+TextReformer::TextReformer() {}
+
+bool TextReformer::IsSpace(wchar_t ch) {
 	if (ch == ' ') return true;
 	else if (ch == '\n') return true;
 	else if (ch == '\t') return true;
@@ -16,8 +20,8 @@ bool UNREPEATER::MasterWin::IsSpace(wchar_t ch) {
 	return false;
 }
 
-std::wstring UNREPEATER::MasterWin::RemoveDoubleSpaces() {
-	const std::wstring input = msclr::interop::marshal_as<std::wstring>(this->InputWin->Text);
+std::wstring TextReformer::RemoveDoubleSpaces(const std::wstring& Input) {
+	const std::wstring input = Input;
 	std::wstring result;
 
 	// Preallocates memory for the result
@@ -50,10 +54,9 @@ std::wstring UNREPEATER::MasterWin::RemoveDoubleSpaces() {
 	return result;
 }
 
-bool UNREPEATER::MasterWin::IsSentenceEnd(wchar_t ch) {
+bool TextReformer::IsSentenceEnd(wchar_t ch) {
 	if (ch == '.') return true;
 	else if (ch == '!') return true;
-	//This char was intensionally omitted. Sometime a text has special characters, that
 	else if (ch == '?') return true;
 	else if (ch == '…') return true;
 	else if (ch == ';') return true;
@@ -61,12 +64,18 @@ bool UNREPEATER::MasterWin::IsSentenceEnd(wchar_t ch) {
 	return false;
 }
 
-void UNREPEATER::MasterWin::BreakText() {
-	const std::wstring TextToBreak = RemoveDoubleSpaces();
+//////////////PUBLIC//////////////////
+
+TextReformer& TextReformer::getInstance() {
+	return Reformer;
+}
+
+std::wstring TextReformer::ReformText(const std::wstring& Input) {
+	const std::wstring TextToReform = RemoveDoubleSpaces(Input);
 	std::wstring Result;
 
 	bool WasNewLine = false;
-	for (wchar_t ch : TextToBreak) {
+	for (wchar_t ch : TextToReform) {
 		if (IsSentenceEnd(ch)) {
 			Result.push_back(ch);
 			Result.push_back('\r');
@@ -84,5 +93,5 @@ void UNREPEATER::MasterWin::BreakText() {
 		}
 	}
 
-	this->InputWin->Text = msclr::interop::marshal_as<System::String^>(Result);
+	return Result;
 }

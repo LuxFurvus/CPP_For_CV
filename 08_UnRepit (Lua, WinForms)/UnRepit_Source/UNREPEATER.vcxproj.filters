@@ -11,10 +11,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MasterWin.cpp">
+    <ClCompile Include="unrep_main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TokenSearch.h">
+    <ClCompile Include="unrep_reformer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="unrep_tokensearch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -25,8 +28,14 @@
     <ClInclude Include="resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Breaker.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="unrep_reformer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unrep_tokensearch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="unrep_luafunc.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -35,5 +44,9 @@
   <ItemGroup>
     <Image Include="Goblin.ico" />
     <Image Include="RER.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="UnRepit_Settings.luau" />
+    <None Include="LuaReformer.luau" />
   </ItemGroup>
 </Project>

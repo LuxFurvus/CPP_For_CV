@@ -1,14 +1,41 @@
-#pragma once
+#include "unrep_tokensearch.h"
 
-#include "MasterWin.h"
+// Definition of the static member variable Tokenizer
+TokenSearcher TokenSearcher::Tokenizer;
 
-bool NoDigiPunct(unsigned char c) {
+TokenSearcher& TokenSearcher::getInstance() {
+	return Tokenizer;
+}
+
+void TokenSearcher::setTokenMinSize(int MinSize) {
+	if (MinSize < 1) {
+		return;
+	}
+	TokenMinSize = MinSize;
+}
+
+void TokenSearcher::setTokenMinFrequency(int MinFrequency) {
+	if (MinFrequency < 1) {
+		return;
+	}
+	TokenMinFrequency = MinFrequency;
+}
+
+int TokenSearcher::getTokenMinSize() {
+	return TokenMinSize;
+}
+
+int TokenSearcher::getTokenMinFrequency() {
+	return TokenMinFrequency;
+}
+
+bool TokenSearcher::NoDigiPunct(unsigned char c) {
 	return std::ispunct(c) || std::isdigit(c);
 }
-bool NoDoubleSpaces(char a, char b) {
+bool TokenSearcher::NoDoubleSpaces(char a, char b) {
 	return a == ' ' && b == ' ';
 }
-int ToLowerEngRu(char r) {
+int TokenSearcher::ToLowerEngRu(char r) {
 	if (r >= 97 && r <= 122) {
 		return r;
 	}
@@ -53,16 +80,16 @@ int ToLowerEngRu(char r) {
 	}
 	return (r);
 }
-bool ForSort(const std::pair<std::string, size_t>& a, const std::pair<std::string, size_t>& b) {
-	return a.second > b.second;
-}
+//static bool ForSort(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+//	return a.second > b.second;
+//}
 
 //////////////////////////////////////////////
 //////////////////////////////////////////////
 //////////////////////////////////////////////
 
-size_t UNREPEATER::MasterWin::CountOneToken(const std::string& String, const std::string& Token) {
-	size_t count = 0;
+int TokenSearcher::CountOneToken(const std::string& String, const std::string& Token) {
+	int count = 0;
 	std::string::size_type pos = 0;
 	while ((pos = String.find(Token, pos)) != std::string::npos) {
 		++count;
@@ -71,7 +98,7 @@ size_t UNREPEATER::MasterWin::CountOneToken(const std::string& String, const std
 	return count;
 }
 
-bool UNREPEATER::MasterWin::IsAlphaEngRu(char w) {
+bool TokenSearcher::IsAlphaEngRu(char w) {
 	if ((w >= 97 && w <= 122) || (w >= 65 && w <= 90) || (w >= -64 && w <= -1) ||
 		w == '¨' || w == '¸') {
 		return true;
@@ -79,25 +106,41 @@ bool UNREPEATER::MasterWin::IsAlphaEngRu(char w) {
 	return false;
 }
 
-std::string UNREPEATER::MasterWin::CleanTheText() {
-	std::string TextToClean = msclr::interop::marshal_as<std::string>(this->InputWin->Text);
+std::string TokenSearcher::CleanTheText(const std::string& text) {
+	std::string TextToClean = text;
 
 	//Removes all digits and punctuation signs from the text for faster iteration
-	TextToClean.erase(std::remove_if(TextToClean.begin(), TextToClean.end(), NoDigiPunct), TextToClean.end());
+	TextToClean.erase(
+		std::remove_if(TextToClean.begin(),
+			TextToClean.end(),
+			[this](unsigned char c) {
+				return TokenSearcher::NoDigiPunct(c);
+			}),
+		TextToClean.end()
+	);
 
 	//Removes double spaces, left from the last operation, from the text for faster iteration
-	TextToClean.erase(std::unique(TextToClean.begin(), TextToClean.end(), NoDoubleSpaces), TextToClean.end());
+	TextToClean.erase(
+		std::unique(TextToClean.begin(),
+			TextToClean.end(),
+			[this](char a, char b) {
+				return TokenSearcher::NoDoubleSpaces(a, b);
+			}),
+		TextToClean.end()
+	);
 
 	//Converts all uppercase letters to lowercase for unified search
-	std::transform(begin(TextToClean), end(TextToClean), begin(TextToClean), ToLowerEngRu);
+	std::transform(TextToClean.begin(), TextToClean.end(), TextToClean.begin(), [this](char r) {
+		return TokenSearcher::ToLowerEngRu(r);
+		});
 
 	return TextToClean;
 }
 
-void UNREPEATER::MasterWin::FindLeaderPair(std::string& MaxStr, size_t& MaxNum, std::map<std::string, size_t>& WordMap) {
+void TokenSearcher::FindLeaderPair(std::string& MaxStr, int& MaxNum, std::map<std::string, int>& WordMap) {
 	for (const auto& entry : WordMap) {
 		const std::string& word = entry.first;
-		size_t frequency = entry.second;
+		int frequency = entry.second;
 
 		if (frequency > MaxNum ||
 			(frequency == MaxNum && word.length() > MaxStr.length())) {
@@ -107,19 +150,18 @@ void UNREPEATER::MasterWin::FindLeaderPair(std::string& MaxStr, size_t& MaxNum, 
 	}
 }
 
-std::map<std::string, size_t> UNREPEATER::MasterWin::TokenizeText() {
-	std::map<std::string, size_t> TokenFrequency;
-	std::map<std::string, size_t> AllVariansMap;
+std::map<std::string, int> TokenSearcher::TokenizeText(const std::string& TextToDo) {
+	std::map<std::string, int> TokenFrequency;
+	std::map<std::string, int> AllVariansMap;
 	std::unordered_set<std::string> LearnedTokens;
 
-	const std::string TextToDo = CleanTheText();
-	const size_t TextSize = TextToDo.length();
+	const int TextSize = static_cast<int>(TextToDo.length());
 
-	size_t TokenStart = 0;
+	int TokenStart = 0;
 
 	//This map contains words, we've already found and evaluated. So we do not need to waste time to check again
 	//Iterate over text letter by letter
-	for (size_t ii = 0; ii < TextSize; ++ii) {
+	for (int ii = 0; ii < TextSize; ++ii) {
 		//////
 		//////If we stubble upon a letter, that means we've found a word. So we start counting its length
 		if (IsAlphaEngRu(TextToDo[ii])) {
@@ -132,7 +174,7 @@ std::map<std::string, size_t> UNREPEATER::MasterWin::TokenizeText() {
 			AllVariansMap.clear();
 
 			//Looking for the word occurrences in the text. After every iteration we cut the last char out of the word, till the word get the minimal size
-			while (SingleToken.length() >= TokenMinSize) {
+			while (SingleToken.length() >= static_cast<size_t>(TokenMinSize)) {
 				AllVariansMap.emplace_hint(begin(AllVariansMap), SingleToken, CountOneToken(TextToDo, SingleToken));
 				//If we deal with a familiar word or word part, we skip this word to look for new ones
 				if (LearnedTokens.count(SingleToken) != 0) {
@@ -142,7 +184,7 @@ std::map<std::string, size_t> UNREPEATER::MasterWin::TokenizeText() {
 			}
 			//Select the most frequent AND the longest word variant
 			std::string LeaderStr;
-			size_t LeaderNum = 0;
+			int LeaderNum = 0;
 			FindLeaderPair(LeaderStr, LeaderNum, AllVariansMap);
 
 			if (LeaderNum >= TokenMinFrequency) {
@@ -170,13 +212,19 @@ std::map<std::string, size_t> UNREPEATER::MasterWin::TokenizeText() {
 	return TokenFrequency;
 }
 
-std::string UNREPEATER::MasterWin::AnalyseText() {
-	std::map<std::string, size_t> Tokens = TokenizeText();
+//Function to analyse the given text and search for repeated tokens
+std::string TokenSearcher::AnalyzeTokens(const std::string& text) {
+	const std::string TextToDo = CleanTheText(text);
+
+	std::map<std::string, int> Tokens = TokenizeText(TextToDo);
+
 	if (Tokens.size() == 0) {
 		return "The text has no repeated words and word parts!";
 	}
-	std::vector<std::pair<std::string, size_t>> vec(Tokens.begin(), Tokens.end());
-	std::sort(vec.begin(), vec.end(), ForSort);
+	std::vector<std::pair<std::string, int>> vec(Tokens.begin(), Tokens.end());
+	std::sort(vec.begin(), vec.end(), [](const auto& a, const auto& b) {
+		return a.second > b.second;
+		});
 
 	std::string OutPut;
 
