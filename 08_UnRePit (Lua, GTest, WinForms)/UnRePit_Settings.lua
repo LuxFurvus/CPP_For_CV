@@ -9,5 +9,5 @@ InterfaceLang = 0
 
 --Use the code from Lua files to handle text.
 --If 'false', internal C++ code is used.
-UseLuaCode = true
+UseLuaCode = false
 
