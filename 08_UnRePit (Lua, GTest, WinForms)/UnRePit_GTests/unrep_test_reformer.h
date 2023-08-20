@@ -4,15 +4,14 @@
 #include <string>
 
 class TextReformer {
-private:
-	TextReformer();  // Private constructor to prevent instantiation
+public:
+	TextReformer();
 	static TextReformer Reformer;
 
-	bool IsSpace(wchar_t ch);
-	std::wstring RemoveDoubleSpaces(const std::wstring& Input);
-	bool IsSentenceEnd(wchar_t ch);
+	bool IsSpace(char16_t ch);
+	bool IsSentenceEnd(char16_t ch);
+	std::wstring RemoveOddChars(const std::wstring& Input);
 
-public:
 	static TextReformer& getInstance();
 	std::wstring ReformText(const std::wstring& Input);
 };

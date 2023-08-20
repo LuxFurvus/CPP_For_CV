@@ -46,7 +46,7 @@
     <Image Include="RER.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="UnRepit_Settings.luau" />
-    <None Include="LuaReformer.luau" />
+    <None Include="UnRePit_LuaReformer.lua" />
+    <None Include="UnRePit_Settings.lua" />
   </ItemGroup>
 </Project>

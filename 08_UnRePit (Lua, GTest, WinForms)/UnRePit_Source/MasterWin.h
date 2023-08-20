@@ -302,7 +302,7 @@ namespace UNREPEATER {
 			   this->Icon = (cli::safe_cast<System::Drawing::Icon^>(resources->GetObject(L"$this.Icon")));
 			   this->MinimumSize = System::Drawing::Size(700, 700);
 			   this->Name = L"MasterWin";
-			   this->Text = L"UnRepeater";
+			   this->Text = L"UnRePit";
 			   this->Load += gcnew System::EventHandler(this, &MasterWin::MasterWin_Load);
 			   this->SizeChanged += gcnew System::EventHandler(this, &MasterWin::MasterWin_SizeChanged);
 			   this->TextPanel->ResumeLayout(false);
@@ -384,6 +384,7 @@ namespace UNREPEATER {
 	private: System::Void InputTextBox_MouseDown(System::Object^ sender, System::Windows::Forms::MouseEventArgs^ e) {
 		if (IsJustOpened) {
 			this->InputTextBox->Text = "";
+			this->OutputWin->Text = "";
 			IsJustOpened = false;
 		}
 	}
@@ -421,12 +422,30 @@ namespace UNREPEATER {
 
 	private: System::Void ReformButton_Click(System::Object^ sender, System::EventArgs^ e) {
 		IsJustOpened = false;
-		const std::wstring input = msclr::interop::marshal_as<std::wstring>(this->InputTextBox->Text);
 
-		std::wstring output = TextReformer::getInstance().ReformText(input);
+		if (GetLuaBool("UseLuaCode")) {
+			std::string TextToDo = msclr::interop::marshal_as<std::string>(this->InputTextBox->Text);
 
-		this->InputTextBox->Text = msclr::interop::marshal_as<System::String^>(output);
+			bool IsLuaError = CallLuaReformer(TextToDo);
+
+			if (IsLuaError) {
+				this->OutputWin->Text = msclr::interop::marshal_as<System::String^>(TextToDo);
+				return;
+			}
+			else {
+				this->InputTextBox->Text = msclr::interop::marshal_as<System::String^>(TextToDo);
+				this->OutputWin->Text = "";
+				return;
+			}
+		}
+		else {
+			const std::wstring input = msclr::interop::marshal_as<std::wstring>(this->InputTextBox->Text);
+			std::wstring output = TextReformer::getInstance().ReformText(input);
+			this->InputTextBox->Text = msclr::interop::marshal_as<System::String^>(output);
+			return;
+		}
 	}
+
 	private: System::Void ButtonLUAread_Click(System::Object^ sender, System::EventArgs^ e) {
 		IsJustOpened = false;
 

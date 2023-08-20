@@ -2,22 +2,20 @@
 #ifndef UNREP_LUAFUNC_H
 #define UNREP_LUAFUNC_H
 
+extern "C" {
+#include "LuaLibs/lua.hpp"
+}
 #ifdef _WIN64
-extern "C" {
-#include "LuaLibs/Lua542_64/lua.hpp"
-}
-#pragma comment (lib, "LUALIBS/Lua542_64/lua54.lib")
+#pragma comment (lib, "LuaLibs/lua54_x64.lib")
 #else
-extern "C" {
-#include "LuaLibs/Lua542_32/lua.hpp"
-}
-#pragma comment (lib, "LUALIBS/Lua542_32/lua54.lib")
-#endif // _WIN32
+#pragma comment (lib, "LuaLibs/lua54_x32.lib")
+#endif // _WIN64
 
 #include <string>
 
 namespace {
-	static const char* LuaSettingsFile = "UnRepit_Settings.luau";
+	static const char* LuaSettingsFile = "UnRePit_Settings.lua";
+	static const char* LuaReformerFile = "UnRePit_LuaReformer.lua";
 }
 
 int GetLuaInt(const char* IntName) noexcept {
@@ -56,6 +54,49 @@ bool GetLuaBool(const char* BoolName) noexcept {
 
 	lua_close(L);
 	return LuaBool;
+}
+
+bool CallLuaReformer(std::string& Input) noexcept {
+	lua_State* L = luaL_newstate();
+	luaL_openlibs(L);
+
+	// Load and execute Lua script from a file
+	if (luaL_loadfile(L, LuaReformerFile) || lua_pcall(L, 0, 0, 0)) {
+		const char* errorMsg = lua_tostring(L, -1);
+		// Handle unexpected error
+	}
+
+	// Get the Lua function onto the stack
+	lua_getglobal(L, "ReformText");
+
+	// Push arguments onto the stack
+	lua_pushstring(L, Input.c_str());
+
+	// Call the function with error protection
+	int status = lua_pcall(L, 1, 1, 0);
+	if (status == LUA_OK) {
+		// Function executed successfully, retrieve result
+		if (lua_isstring(L, -1)) {
+			Input = lua_tostring(L, -1);
+		}
+		else {
+			Input.clear();
+			Input.append("Lua error: ");
+			Input.append(lua_tostring(L, -1));
+			return true;
+		}
+	}
+	else {
+		Input.clear();
+		Input.append("Lua error: ");
+		Input.append(lua_tostring(L, -1));
+		return true;
+	}
+
+	// Close Lua state
+	lua_close(L);
+
+	return false;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -119,7 +160,7 @@ private:
 	}
 public:
 
-	static void FlushOutput() noexcept {
+	static inline void FlushOutput() noexcept {
 		LuaOutput.clear();
 	}
 
@@ -128,7 +169,6 @@ public:
 		luaL_openlibs(L);
 
 		// Register the custom print function
-		//lua_pushlightuserdata(L, this);  // Pass a pointer to 'this' as an upvalue
 		lua_pushcclosure(L, CustomPrint, 1);
 		lua_setglobal(L, "print");
 
