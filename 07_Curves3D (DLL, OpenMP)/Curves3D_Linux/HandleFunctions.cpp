@@ -7,7 +7,7 @@
 
 std::vector<std::unique_ptr<Curve>> MakeVectorOne(size_t CurvesNumber, double MaxRadiusSize) {
 	// Seed the random number generator
-	std::mt19937 rng(static_cast<unsigned int>(std::time(nullptr)));
+	std::mt19937 rng(static_cast<unsigned int>(time(nullptr)));
 	std::uniform_real_distribution<double> radiusDist(0.01, MaxRadiusSize);
 	std::uniform_real_distribution<double> stepDist(0.01, MaxRadiusSize * 0.5);
 
