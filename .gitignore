@@ -1,0 +1,9 @@
+~*
+**/.vs/
+**/boost*/
+**/.cr/
+*.filters
+**/x64/
+**/Debug/
+**/Release/
+**/build-*/
