@@ -136,14 +136,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="vcfe_code_dict.h" />
+    <ClInclude Include="vcfe_decode_from_hex.h" />
     <ClInclude Include="vcfe_deencode_funcs.h" />
     <ClInclude Include="vcfe_encode_symbol.h" />
+    <ClInclude Include="vcfe_encode_to_hex.h" />
     <ClInclude Include="vcfe_regex_parsers.h" />
     <ClInclude Include="vcfe_text_processor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="c_func_test.c" />
+    <ClCompile Include="vcfe_decode_from_hex.c" />
     <ClCompile Include="vcfe_deencode_funcs.c" />
+    <ClCompile Include="vcfe_encode_to_hex.c" />
     <ClCompile Include="vcfe_main.cpp" />
     <ClCompile Include="vcfe_regex_parsers.cpp" />
     <ClCompile Include="vcfe_text_processor.cpp" />
