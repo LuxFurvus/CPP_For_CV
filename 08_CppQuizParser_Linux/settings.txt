@@ -1,0 +1,10 @@
+
+#URL Template:    https://cppquiz.org/quiz/question/%d
+
+#Parse Start Index:     0
+
+#Parse Final Index:   1000
+
+#Discard URLs with this text: If you came here by manually typing in a question ID, that may not work, as the question IDs are not consecutive
+
+#Parsing output path and file: output.txt
