@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>IF-ELSE Statements in C++</title>
+    <style>
+        body {
+            background-color: #333;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        h1, h2 {
+            color: darkred;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #000000;
+            padding: 15px;
+            margin: 10px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            white-space: -moz-pre-wrap;
+            white-space: -pre-wrap;
+            white-space: -o-pre-wrap;
+            word-wrap: break-word;
+            color: #9df;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .comment {
+            color: #989898;
+        }
+        .keyword {
+            color: #0000ff;
+        }
+        .function {
+            color: #008000;
+        }
+        .string {
+            color: #FF0000;
+        }
+        .number {
+            color: #0000dd;
+        }
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>IF-ELSE Statements in C++</h1>
+    <p>The if-else statement is a fundamental control structure in C++ programming that allows the execution of different blocks of code based on the evaluation of a condition. It provides a way to control the flow of a program and make decisions based on certain conditions.</p>
+    <p>The if-else statement is essential for implementing branching logic and creating more complex programs with multiple possible paths of execution.</p>
+    <h2>Structure:</h2>
+    <p>The general syntax of the if-else statement in C++ is as follows:</p>
+    <pre>
+if (condition1) {
+    // code to be executed if condition1 is true
+}
+else if (condition2) {
+    // code to be executed if condition1 is false and condition2 is true
+}
+else if (condition3) {
+    // code to be executed if condition1 and condition2 are false, and condition3 is true
+}
+else {
+    // code to be executed if all conditions are false
+}
+    </pre>
+    <p>The condition is enclosed within parentheses and can be any expression that returns a boolean value. The block of code following the if statement is executed if the condition is true. If the condition is false, the block of code following the else statement is executed.</p>
+    <p>It's important to note that the conditions are evaluated in order, and the first condition that evaluates to true triggers the execution of its corresponding block of code. Subsequent conditions are not evaluated once a true condition is found.</p>
+    <h2>Applications:</h2>
+    <p>The if-else statement is widely used in various programming scenarios, such as:</p>
+    <ul>
+        <li>Conditional execution: It allows different blocks of code to be executed based on specific conditions, enabling programs to respond differently to different situations.</li>
+        <li>Input validation: By checking user input against certain conditions, the if-else statement helps ensure that the input meets the required criteria before proceeding with further operations.</li>
+        <li>Decision-making: Using if-else statements, programs can make decisions and take different actions based on the current state of variables or user input.</li>
+        <li>Error handling: If-else statements can be used to handle exceptional situations or error conditions by executing specific error-handling code when necessary.</li>
+    </ul>
+    <h2>Code Example:</h2>
+    <pre class="cpp">
+<span class="comment">// Include the standard input/output library for input and output operations</span>
+<span class="keyword">#include &lt;stdio.h&gt;</span>
+
+<span class="keyword">int</span> <span class="function">main</span>() {
+    <span class="keyword">int</span> age; <span class="comment">// Declare an integer variable 'age' to store the user's age</span>
+
+    <span class="function">printf</span>(<span class="string">"Enter your age: "</span>); <span class="comment">// Display a message to prompt the user for input</span>
+    <span class="function">scanf_s</span>(<span class="string">"%d"</span>, &age); <span class="comment">// Read the user's input and store it in the 'age' variable</span>
+
+    <span class="keyword">if</span> (age &lt; <span class="number">18</span>) { <span class="comment">// Check if the age is less than 18</span>
+        <span class="function">printf</span>(<span class="string">"You are a minor.\n"</span>); <span class="comment">// Display a message for minors</span>
+    }
+    <span class="keyword">else if</span> (age &gt;= <span class="number">18</span> && age &lt; <span class="number">65</span>) { <span class="comment">// Check if the age is between 18 and 64 (inclusive)</span>
+        <span class="function">printf</span>(<span class="string">"You are an adult.\n"</span>); <span class="comment">// Display a message for adults</span>
+    }
+    <span class="keyword">else</span> { <span class="comment">// If the age is not less than 18 and not within the adult range</span>
+        <span class="function">printf</span>(<span class="string">"You are a senior citizen.\n"</span>); <span class="comment">// Display a message for senior citizens</span>
+    }
+
+    <span class="keyword">return</span> <span class="number">0</span>; <span class="comment">// Return 0 to indicate successful program execution</span>
+}
+    </pre>
+</body>
+</html>

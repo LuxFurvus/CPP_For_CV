@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>While & Do-While Loops in C++</title>
+    <style>
+        body {
+            background-color: #333;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        h1, h2 {
+            color: darkred;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #000000;
+            padding: 15px;
+            margin: 10px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            white-space: -moz-pre-wrap;
+            white-space: -pre-wrap;
+            white-space: -o-pre-wrap;
+            word-wrap: break-word;
+            color: #9df;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .comment {
+            color: #989898;
+        }
+        .keyword {
+            color: #0000ff;
+        }
+        .function {
+            color: #008000;
+        }
+        .string {
+            color: #FF0000;
+        }
+        .number {
+            color: #0000dd;
+        }
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>While & Do-While Loops in C++</h1>
+    <p>Loops in programming languages are control structures that allow the execution of a block of code repeatedly as long as a specified condition is true. In C++, two commonly used loops are the while loop and the do-while loop. They both serve the purpose of repetitive execution but differ in their behavior, especially regarding when the condition is evaluated.</p>
+    <h2>While Loop:</h2>
+    <p>The while loop in C++ continuously executes a block of code as long as the specified condition remains true. The condition is evaluated before each iteration.</p>
+    <p>Explanation:</p>
+    <ul>
+        <li>The while loop syntax begins with the keyword <span class="keyword">while</span> followed by a condition in parentheses.</li>
+        <li>The loop's body is enclosed in curly braces.</li>
+        <li>Inside the loop, the condition is evaluated. If it's true, the code block executes. After each execution, the condition is checked again. If the condition is false, the loop terminates.</li>
+    </ul>
+    <h2>Do-While Loop:</h2>
+    <p>The do-while loop is similar to the while loop, but it evaluates the condition after the execution of the loop's body. This ensures that the loop body executes at least once, regardless of the condition's initial value.</p>
+    <p>Explanation:</p>
+    <ul>
+        <li>The do-while loop syntax starts with the <span class="keyword">do</span> keyword, followed by the loop's body enclosed in braces.</li>
+        <li>After the body, the <span class="keyword">while</span> keyword and the condition follow the closing brace. This is the key difference—the condition comes after the loop body.</li>
+        <li>The loop continues as long as the condition remains true. If the condition is false, the loop terminates.</li>
+    </ul>
+    <h2>Key Differences:</h2>
+    <ol>
+        <li><strong>Condition Evaluation:</strong>
+            <ul>
+                <li>While Loop: The condition is evaluated before the first iteration, and if it's false initially, the loop might not execute at all.</li>
+                <li>Do-While Loop: The condition is evaluated after the first iteration, ensuring that the loop body executes at least once.</li>
+            </ul>
+        </li>
+        <li><strong>Usages:</strong>
+            <ul>
+                <li>While Loop: Used when the number of iterations is unknown or when the loop may not need to execute at all based on the initial condition.</li>
+                <li>Do-While Loop: Suitable when the loop body must execute at least once, irrespective of the condition.</li>
+            </ul>
+        </li>
+    </ol>
+    <h2>Code Example:</h2>
+    <pre class="cpp">
+<span class="keyword">#include &lt;stdio.h&gt;</span>
+
+<span class="keyword">int</span> <span class="function">main</span>(<span class="keyword">void</span>) {
+    <span class="keyword">int</span> i = <span class="number">0</span>; <span class="comment">// Initializing variable 'i' for the while loop</span>
+    <span class="function">printf</span>(<span class="string">"Using while loop: "</span>);
+    <span class="keyword">while</span> (i < <span class="number">5</span>) {
+        <span class="function">printf</span>(<span class="string">"%d ",</span> i); <span class="comment">// Output the current value of 'i'</span>
+        i++; <span class="comment">// Increment 'i'</span>
+    }
+    <span class="function">printf</span>(<span class="string">"\n"</span>);
+
+    <span class="keyword">int</span> j = <span class="number">0</span>; <span class="comment">// Initializing variable 'j' for the do-while loop</span>
+    <span class="function">printf</span>(<span class="string">"Using do-while loop: "</span>);
+    <span class="keyword">do</span> {
+        <span class="function">printf</span>(<span class="string">"%d ",</span> j); <span class="comment">// Output the current value of 'j'</span>
+        j++; <span class="comment">// Increment 'j'</span>
+    } <span class="keyword">while</span> (j < <span class="number">5</span>);
+
+    <span class="keyword">return</span> <span class="number">0</span>;
+}
+    </pre>
+</body>
+</html>

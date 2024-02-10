@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Switch Statement in C++</title>
+    <style>
+        body {
+            background-color: #333;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        h1, h2 {
+            color: darkred;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #000000;
+            padding: 15px;
+            margin: 10px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            white-space: -moz-pre-wrap;
+            white-space: -pre-wrap;
+            white-space: -o-pre-wrap;
+            word-wrap: break-word;
+            color: #9df;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .comment {
+            color: #989898;
+        }
+        .keyword {
+            color: #0000ff;
+        }
+        .function {
+            color: #008000;
+        }
+        .string {
+            color: #FF0000;
+        }
+        .number {
+            color: #0000dd;
+        }
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Switch Statement in C++</h1>
+    <p>The switch statement in C++ is a control flow statement that allows the execution of different blocks of code based on the value of a given expression. It provides a concise and efficient way to choose among multiple alternatives by evaluating the expression and matching its value against a set of possible constant values.</p>
+    <p>Once a match is found, the corresponding block of code associated with that value is executed. The switch statement is commonly used when there are multiple mutually exclusive cases to consider.</p>
+    <h2>Usage:</h2>
+    <p>The switch statement is often used when there are multiple alternatives based on the value of an expression. It provides a more concise and readable alternative to using multiple nested if-else statements.</p>
+    <p>The switch statement operates on integral types and C++11's enum class types. The integral types include int, char, short, long, and their respective unsigned versions. The enum class types provide a type-safe enumeration where the values are strongly scoped and cannot be implicitly converted to other types.</p>
+    <h2>Specific Details:</h2>
+    <p>The switch statement consists of the following parts:</p>
+    <ul>
+        <li><strong>Expression:</strong> It is a variable or an expression whose value is to be evaluated against the set of constant values.</li>
+        <li><strong>Case Labels:</strong> These are the constant values against which the expression is compared. Each case label represents a possible value that the expression might have.</li>
+        <li><strong>Case Statements:</strong> These are the blocks of code associated with each case label. When a match is found, the corresponding case statement(s) are executed.</li>
+        <li><strong>Default Case:</strong> This is an optional part of the switch statement. It is executed when none of the case labels match the value of the expression. It provides a fallback option when no specific case matches.</li>
+    </ul>
+    <h2>Default Switch Case</h2>
+    <p>The default keyword is also used in the context of switch statements. When a switch statement is used, the default case specifies the code to be executed if none of the other case labels match the expression being evaluated.</p>
+    <h2>Applications:</h2>
+    <p>The switch statement is commonly used in various scenarios, such as:</p>
+    <ol>
+        <li>Menu-driven programs: When a user is presented with a menu of options, the switch statement can be used to handle different menu selections.</li>
+        <li>State machines: Switching between different states based on specific conditions can be efficiently implemented using the switch statement.</li>
+        <li>Processing command-line arguments: The switch statement can be employed to handle different command-line options or arguments passed to a program.</li>
+    </ol>
+    <h2>Difference from Similar Concepts:</h2>
+    <p>The switch statement in C++ is distinct from other similar concepts, such as if-else statements and the ternary conditional operator (?:), in the following ways:</p>
+    <ol>
+        <li><strong>switch vs. if-else statements:</strong> The switch statement is specifically designed to handle multiple mutually exclusive cases based on the value of an expression, whereas if-else statements are more suitable for handling conditions that are not mutually exclusive. switch provides a more concise syntax when dealing with many alternatives.</li>
+        <li><strong>switch vs. ternary conditional operator (?:):</strong> The switch statement is used for selecting from multiple options based on the value of an expression, whereas the ternary conditional operator is used to select one of two values based on a condition. The switch statement allows for handling more than two options and provides a clearer structure when dealing with a large number of cases.</li>
+    </ol>
+    <h2>Code Example:</h2>
+    <pre class="cpp">
+<span class="comment">// Include the standard input/output library.</span>
+<span class="keyword">#include &lt;stdio.h&gt;</span>
+
+<span class="comment">// Define a function to process user selection.</span>
+<span class="keyword">void</span> <span class="function">processSelection</span>(<span class="keyword">int</span> choice) {
+    <span class="keyword">switch</span>(choice) {
+        <span class="keyword">case</span> <span class="number">1</span>: 
+            <span class="function">printf</span>(<span class="string">"Performing action 1.\n"</span>);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">2</span>: 
+            <span class="function">printf</span>(<span class="string">"Performing action 2.\n"</span>);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">3</span>: 
+            <span class="function">printf</span>(<span class="string">"Performing action 3.\n"</span>);
+            <span class="keyword">break</span>;
+        <span class="keyword">default</span>: 
+            <span class="function">printf</span>(<span class="string">"Invalid selection.\n"</span>);
+            <span class="keyword">break</span>;
+    }
+}
+
+<span class="keyword">int</span> <span class="function">main</span>() {
+    <span class="keyword">int</span> selection;
+    <span class="function">printf</span>(<span class="string">"Menu:\n"</span>);
+    <span class="function">printf</span>(<span class="string">"1. Action 1\n"</span>);
+    <span class="function">printf</span>(<span class="string">"2. Action 2\n"</span>);
+    <span class="function">printf</span>(<span class="string">"3. Action 3\n"</span>);
+    <span class="function">printf</span>(<span class="string">"Enter your selection: "</span>);
+    <span class="function">scanf_s</span>(<span class="string">"%d"</span>, &selection);
+
+    <span class="function">processSelection</span>(selection);
+
+    <span class="keyword">return</span> <span class="number">0</span>;
+}
+    </pre>
+</body>
+</html>
