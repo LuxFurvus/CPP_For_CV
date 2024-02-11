@@ -1,13 +1,14 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <locale.h>
-#include <wchar.h>
-#include "vcfe_decode_from_hex.h"
+#include<stdlib.h>
+#include<string.h>
+#include<stdio.h>
+#include<stdint.h>
 
-void hex_string_to_hexnums(const char* str, uint32_t* hexnums) {
+char* hex_string_to_utf8_string(const char* str) {
 	int str_size = (int)strlen(str);
+
+	int number_of_hex = (str_size / 3) + 1;
+
+	uint32_t* hexnums = (uint32_t*)calloc(number_of_hex, sizeof(uint32_t));
 
 	char pair[3] = { 0 };
 
@@ -24,6 +25,52 @@ void hex_string_to_hexnums(const char* str, uint32_t* hexnums) {
 		++h;
 		++i;
 	}
+
+	char* utf8_string = (char*)calloc(number_of_hex + 1, 1);
+
+	for (int i = 0; i < number_of_hex; ++i) {
+		utf8_string[i] = (char)hexnums[i];
+	}
+
+	free(hexnums);
+
+	return utf8_string;
+}
+
+#ifdef VCFE_ENDECODE_FUNC_H_OBSOLETE
+
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
+#include <locale.h>
+#include <wchar.h>
+#include "vcfe_decode_from_hex.h"
+
+uint32_t* hex_string_to_hexnums(const char* str) {
+	int str_size = (int)strlen(str);
+
+	int number_of_hex = (str_size / 3) + 1;
+
+	uint32_t* hexnums = (uint32_t*)calloc(number_of_hex, sizeof(uint32_t));
+
+	char pair[3] = { 0 };
+
+	int h = 0;
+
+	for (int i = 0; i < str_size; ++i) {
+		if (str[i] == '=') {
+			continue;
+		}
+		pair[0] = str[i];
+		pair[1] = str[i + 1];
+
+		hexnums[h] = strtol(pair, NULL, 16);
+		++h;
+		++i;
+	}
+
+	return hexnums;
 }
 
 wchar_t hexnums_to_wchar(const uint32_t hex[3], const int bit_size) {
@@ -64,14 +111,13 @@ wchar_t* hex_string_to_utf8_string(const char* hexString) {
 
 	int number_of_hex = (str_size / 3) + 1;
 
-	uint32_t* hexnums = (uint32_t*)calloc(number_of_hex, sizeof(uint32_t));
+	uint32_t* hexnums = hex_string_to_hexnums(hexString);
+
 	wchar_t* utf8_str = (wchar_t*)calloc(str_size, sizeof(wchar_t));
 
 	if (hexnums == NULL || utf8_str == NULL) {
 		return NULL;
 	}
-
-	hex_string_to_hexnums(hexString, hexnums);
 
 	int i = 0;
 	int u = 0;
@@ -157,3 +203,5 @@ void hex_string_to_utf8_string_TEST(void) {
 }
 
 #endif // VCF_DEBUG_ONLY
+
+#endif // VCFE_ENDECODE_FUNC_H

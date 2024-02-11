@@ -1,6 +1,18 @@
 #pragma once
+
 #ifndef VCFE_ENDECODE_FUNC_H
 #define VCFE_ENDECODE_FUNC_H
+
+/**
+ * @brief Convert a hexadecimal string to a UTF-8 character string.
+ * @param hexString The hexadecimal string to convert.
+ * @return          The resulting character string.
+ */
+char* hex_string_to_utf8_string(const char* str);
+
+#endif // !VCFE_ENDECODE_FUNC_H
+
+#ifdef VCFE_ENDECODE_FUNC_H_OBSOLETE
 
 #include <stdint.h>
 #include <wchar.h>
@@ -10,7 +22,7 @@
  * @param str       The hexadecimal string of chars to convert.
  * @param hexnums   An array to store the resulting hexadecimal numbers.
  */
-void hex_string_to_hexnums(char* str, uint32_t* hexnums);
+uint32_t* hex_string_to_hexnums(const char* str);
 
 /**
  * @brief Convert an array of hexadecimal numbers to a wide character.
@@ -39,4 +51,4 @@ void hex_string_to_utf8_string_TEST(void);
 
 #endif // VCF_DEBUG_ONLY
 
-#endif // VCFE_ENDECODE_FUNC_H
+#endif // VCFE_ENDECODE_FUNC_H_OBSOLETE

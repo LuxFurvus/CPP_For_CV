@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef VCFE_CODE_DICT_H
 #define VCFE_CODE_DICT_H
+#ifndef VCFE_CODE_DICT_H
 
 //https://www.utf8-chartable.de/
 //http://blog.kislenko.net/show.php?id=2045

@@ -8,7 +8,19 @@
 #include <regex>
 #include <array>
 
-struct Names {
+class VcfEntry {
+private: bool encoded{ false };
+
+public: bool is_encoded() const noexcept {
+		return encoded;
+	}
+public: void set_encoded_state() {
+		encoded = true;
+	}
+};
+
+
+struct Names : public VcfEntry {
 	std::string family;
 	std::string personal;
 	std::string father;
@@ -46,7 +58,7 @@ struct Names {
 	}
 };
 
-struct PhoneticName {
+struct PhoneticName : public VcfEntry {
 	std::string first;
 	std::string middle;
 	std::string last;
@@ -58,17 +70,21 @@ struct PhoneticName {
 	}
 };
 
-struct Telephones {
+struct NickName : public VcfEntry {
+public: std::string nick;
+};
+
+struct Telephones : public VcfEntry {
 	std::string type;
 	std::string number;
 };
 
-struct Emails {
+struct Emails : public VcfEntry {
 	std::string type;
 	std::string address;
 };
 
-struct Addresses {
+struct Addresses : public VcfEntry {
 	std::string type;
 	std::string street;
 	std::string city;
@@ -101,19 +117,19 @@ struct Addresses {
 	}
 };
 
-struct Event {
+struct Event : public VcfEntry {
 	std::string event_name;
 	std::string day;
 	std::string month;
 	std::string year;
 };
 
-struct SocialNet {
+struct SocialNet : public VcfEntry {
 	std::string name;
 	std::string contact;
 };
 
-struct WorkInfo {
+struct WorkInfo : public VcfEntry {
 	std::string company;
 	std::string department;
 	std::string title;
@@ -125,7 +141,7 @@ struct WorkInfo {
 	}
 };
 
-struct Relation {
+struct Relation : public VcfEntry {
 	std::string name;
 	std::string type_name;
 	int type_num;
@@ -146,9 +162,10 @@ const std::vector<std::string> socials_names{
 };
 
 struct ContactData {
+	std::string version;
 	Names names;
 	PhoneticName phonetic_name;
-	std::string nickname;
+	NickName nickname;
 	std::vector<Telephones> tels;
 	std::vector<Emails> emails;
 	std::vector<Addresses> addresses;
@@ -160,8 +177,9 @@ struct ContactData {
 	std::vector<Relation> relations;
 };
 
-void tel_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);
+void version_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);
 void name_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);
+void tel_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);
 void email_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);
 void phonetics_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);
 void nick_parser(const std::string& line, std::unique_ptr<ContactData>& current_card);

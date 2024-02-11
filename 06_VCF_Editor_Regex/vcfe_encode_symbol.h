@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef VCFE_ENCODE_SYMBOL_H
 #define VCFE_ENCODE_SYMBOL_H
+#ifndef VCFE_ENCODE_SYMBOL_H
 
 #include <string.h>
 #include <stdlib.h>

@@ -1,4 +1,68 @@
-﻿#include <stdint.h>
+﻿#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+char* utf8_string_to_hex_string(const char* str) {
+	// Check if encoding is needed by examining each character in the input string
+
+	//Проверка на кодировку не имеет смысла. Если мы вызываем эту функцию, значит кодировка нужна 
+	/*
+	int is_encoded = 0;
+
+	for (int i = 0; str[i] != '\0'; ++i) {
+		if (str[i] < 32 || str[i] > 126) {
+			is_encoded = 1;
+			break;
+		}
+	}
+
+	if (is_encoded == 0) {
+		return NULL;
+	}
+	*/
+	// If encoding is needed, create a new string for the hexadecimal representation
+
+	// Calculate the length of the new string
+	int len = 0;
+	for (int i = 0; str[i] != '\0'; ++i) {
+		len += 4; // Two hexadecimal characters and two characters for "="
+	}
+
+	// Allocate memory for the new string
+	char* encoded_str = (char*)calloc(len + 1, sizeof(char)); // +1 for the null terminator
+
+	if (encoded_str == NULL) {
+		// Memory allocation failed
+		printf("Memory allocation failed\n");
+		exit(EXIT_FAILURE);
+	}
+
+	// Encode each character in the input string to hexadecimal and append "="
+	int index = 0;
+	for (int i = 0; str[i] != '\0'; ++i) {
+		// Format the hexadecimal representation and append "="
+		sprintf(encoded_str + index, "=%02x", (unsigned char)str[i]);
+
+		char w1 = encoded_str[index + 1];
+		if (w1 >= 97 && w1 <= 122) {
+			encoded_str[index + 1] = w1 - 32;
+		}
+
+		w1 = encoded_str[index + 2];
+		if (w1 >= 97 && w1 <= 122) {
+			encoded_str[index + 2] = w1 - 32;
+		}
+
+		index += 3; // Move to the next position for the next iteration
+	}
+
+	return encoded_str;
+}
+
+#define _VCFE_ENCODE_TO_HEX_C_OBSOLETE
+#ifndef _VCFE_ENCODE_TO_HEX_C_OBSOLETE
+
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -110,7 +174,6 @@ int32_t* utf8_to_hexnums(const wchar_t* hex_string, int* hex_end) {
 	if (hexnums == NULL) {
 		return NULL;
 	}
-	//memset(hexnums, -1, hexnums_size * sizeof(int32_t));
 
 	*hex_end = 0;
 	for (int i = 0; i < hex_string_size; i++) {
@@ -191,6 +254,8 @@ void utf8_string_to_hex_string_TEST(void) {
 	printf("\n\n%s\n\n", hex_string);
 
 	free(hex_string);
-}
+	}
 
 #endif // VCF_DEBUG_ONLY
+
+#endif // _VCFE_ENCODE_TO_HEX_C_OBSOLETE

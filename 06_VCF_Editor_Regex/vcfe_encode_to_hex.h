@@ -1,6 +1,24 @@
 #pragma once
-#ifndef _VCFE_DECODE_FROM_HEX_H_
-#define _VCFE_DECODE_FROM_HEX_H_
+
+#ifndef VCFE_ENCODE_TO_HEX_H
+#define VCFE_ENCODE_TO_HEX_H
+
+/**
+ * @brief Convert a UTF-8 string to a hexadecimal-encoded string.
+ *
+ * This function checks if encoding is needed for characters in the input string.
+ * If encoding is required, it creates a new string with hexadecimal representation.
+ *
+ * @param str The input UTF-8 string to be encoded.
+ * @return A dynamically allocated string containing the hexadecimal representation.
+ * The caller is responsible for freeing the allocated memory.
+ */
+char* utf8_string_to_hex_string(const char* str);
+
+#endif // VCFE_ENCODE_TO_HEX_H
+
+#define VCFE_ENCODE_TO_HEX_H_OBSOLETE
+#ifndef VCFE_ENCODE_TO_HEX_H_OBSOLETE
 
 #include <wchar.h>
 #include <stdint.h>
@@ -53,4 +71,4 @@ void utf8_string_to_hex_string_TEST(void);
 
 #endif // VCFE_DEBUG_ONLY
 
-#endif // _VCFE_DECODE_FROM_HEX_H_
+#endif // VCFE_ENCODE_TO_HEX_H_OBSOLETE

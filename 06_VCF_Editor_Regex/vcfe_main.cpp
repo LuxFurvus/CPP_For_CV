@@ -1,229 +1,132 @@
 #define NOUSE
 #ifdef NOUSE
 
-#include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
-#include <memory>
-#include <regex>
-#include <unordered_map>
-
-#include "vcfe_text_processor.h"
-#include "vcfe_regex_parsers.h"
-
+#include <locale>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
 extern "C" {
-#include "vcfe_deencode_funcs.h"
+#include "vcfe_encode_to_hex.h"
 }
 
-void print_cards(const std::vector<ContactData>& cards) {
-	for (auto& card : cards) {
-		printf("\n+++NEW CARD+++\n");
+#include "vcfe_utility_functions.h"
+#include "vcfe_printer_functions.h"
+////////////////
 
-		if (!card.names.is_empty()) {
-			printf("NAME:\n\t");
-			for (int i = 0; i < 5; ++i) {
-				std::cout << card.names[i] << ' ';
-			}
-			printf("\n");
-		}
+/*
 
-		if (!card.phonetic_name.is_empty()) {
-			std::cout
-				<< "PHONETIC NAME:\n\t"
-				<< card.phonetic_name.first << " "
-				<< card.phonetic_name.middle << " "
-				<< card.phonetic_name.last << "\n";
-		}
+ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=9A=D0=BE=D0=BC=D0=BF=D0=B0=D0=BD=D0=B8=D1=8F=3B=D0=9E=D1=82=D0=B4=D0=B5=D0=BB
 
-		if (!card.nickname.empty()) {
-			printf("NICKNAME:\n\t");
-			std::cout << card.nickname;
-			printf("\n");
-		}
+TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=94=D0=BE=D0=BB=D0=B6=D0=BD=D0=BE=D1=81=D1=82=D1=8C
 
-		if (!card.tels.empty()) {
-			printf("TELEPHONE NUMBERS:\n");
-			for (auto& tel : card.tels) {
-				std::cout << '\t' << tel.type << ": " << tel.number << "\n";
-			}
-		}
+ORG:Company;Department
 
-		if (!card.emails.empty()) {
-			printf("E-MAILS:\n");
-			for (auto& email : card.emails) {
-				std::cout << '\t' << email.type << ": " << email.address << "\n";
-			}
-		}
+TITLE:Position
 
-		if (!card.addresses.empty()) {
-			printf("ADDRESSES:\n");
-			for (const auto& scric : card.addresses) {
-				std::cout << '\t' << scric[0] << ": ";
-				for (int i = 1; i < 6; ++i) {
-					std::cout << scric[i] << " ";
-				}
-				printf("\n");
-			}
-		}
+*/
 
-		if (!card.workinfo.is_empty()) {
-			printf("ORGANISATION:");
-			std::cout
-				<< "\n\tCompany: " << card.workinfo.company
-				<< "\n\tDepartment: " << card.workinfo.department
-				<< "\n\tTitle: " << card.workinfo.title;
-			printf("\n");
-		}
+void print_vcf_org(const std::vector<Addresses>& addresses, std::ofstream& ss) {
 
-		if (!card.urls.empty()) {
-			printf("URLs:\n");
-			for (const auto& url : card.urls) {
-				std::cout << "\t" << url << "\n";
-			}
-		}
-		if (!card.note.empty()) {
-			std::cout << "NOTES:\n\t" << card.note << "\n";
-		}
+	auto bunch_printer = [&](const Addresses& adr, const char* delim, bool to_encode = true) {
 
-		if (!card.events.empty()) {
-			printf("DATES:\n");
-			for (const auto& event : card.events) {
-				std::cout << "\t" << event.event_name << ": "
-					<< event.day << '-'
-					<< event.month << '-'
-					<< event.year << '\n';
-			}
-		}
+		auto no_encode = [](const char* entry) -> char* {
+			return const_cast<char*>(entry);
+		};
 
-		if (!card.socials.empty()) {
-			printf("SOCIAL NETWORKS:\n");
-			for (const auto& sns : card.socials) {
-				std::cout << "\t"
-					<< sns.name << ": "
-					<< sns.contact << '\n';
-			}
-		}
+		char* (*encoder)(const char*);
+		encoder = (to_encode)? utf8_string_to_hex_string : no_encode;
 
-		if (!card.relations.empty()) {
-			printf("RELATIONS:\n");
-			for (const auto& rel : card.relations) {
-				std::cout << "\t"
-					<< rel.type_name << " ("
-					<< rel.type_num << "):\t\t"
-					<< rel.name << '\n';
-			}
-			printf("\n");
+		ss << encoder(adr.street.c_str()) << delim;
+		ss << encoder(adr.city.c_str()) << delim;
+		ss << encoder(adr.region.c_str()) << delim;
+		ss << encoder(adr.index.c_str()) << delim;
+		ss << encoder(adr.country.c_str()) << delim;
+	};
+
+	for (auto& adr : addresses) {
+		if (adr.is_encoded()) {
+			ss << "X-SAMSUNGADR;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;";
+			bunch_printer(adr, ";");
+			bunch_printer(adr, "=20");
+			ss << "\n";
+			ss << "ADR;";
+			ss << "CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;";
+			bunch_printer(adr, ";");
 		}
+		else {
+			ss << "X-SAMSUNGADR;ENCODING=QUOTED-PRINTABLE:;;";
+			bunch_printer(adr, ";");
+			bunch_printer(adr, "=20");
+			ss << "\n";
+			ss << "ADR;";
+			ss << adr.type << ":;;";
+			bunch_printer(adr, ";", false);
+		}
+		ss << "\n";
 	}
+	ss << "\n";
+	return;
 }
-////////////////
 
 ////////////////
 
-////////////////
-
-////////////////
-void analyse_lines(std::vector<std::string>& lines, std::vector<ContactData>& dataset) {
-	std::unique_ptr<ContactData> current_card;
-
-	for (auto& line : lines) {
-		if (line.contains("BEGIN:VCARD")) {
-			std::unique_ptr<ContactData> card(new ContactData);
-			current_card = std::move(card);
-			continue;
-		}
-
-		if (line.contains("VERSION:")) {
-			continue;
-		}
-
-		////////////////////////////////////
-		if (line[0] == 'N' && (line[1] == ';' || line[1] == ':')) {
-			name_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("X-PHONETIC-")) {
-			phonetics_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("TEL;")) {
-			tel_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("vnd.android.cursor.item/nickname")) {
-			nick_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("EMAIL;") || line.contains("EMAIL:")) {
-			email_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("ADR;") && !line.contains("SAMSUNGADR;")) {
-			address_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("ORG;")) {
-			company_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("TITLE;")) {
-			title_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("URL;") || line.contains("URL:")) {
-			url_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("NOTE;") || line.contains("NOTE:")) {
-			note_parser(line, current_card);
-			continue;
-		}
-		if (line.contains("vnd.android.cursor.item/contact_event;") || line.contains("BDAY:")) {
-			events_parser(line, current_card);
-			continue;
-		}
-		std::string sns_name;
-		if (line[0] == 'X' && is_socials_line(line, sns_name)) {
-			socials_parser(line, current_card, sns_name);
-			continue;
-		}
-		if (line.contains("vnd.android.cursor.item/relation")) {
-			relations_parser(line, current_card);
-			continue;
-		}
-		////////////////////////////////////
-		if (line.contains("END:VCARD")) {
-			dataset.push_back(std::move(*current_card));
-			continue;
-		}
+void make_vcf(const std::vector<ContactData>& cards, const char* vcf_name) {
+	std::ofstream vcf_stream;
+	vcf_stream.open(vcf_name, std::ios::trunc);
+	if (!vcf_stream.is_open()) {
+		printf("Cannot create file %s here!\n", vcf_name);
+		return;
 	}
+
+	for (const ContactData& card : cards) {
+		vcf_stream << "\nBEGIN:VCARD\n";
+		vcf_stream << "VERSION:" << card.version << "\n\n";
+		//////////////////////////
+		print_vcf_name(card.names, vcf_stream);
+		print_vcf_phonetics(card.phonetic_name, vcf_stream);
+		print_vcf_nickname(card.nickname, vcf_stream);
+		print_vcf_telephones(card.tels, vcf_stream);
+		print_vcf_email(card.emails, vcf_stream);
+		print_vcf_address(card.addresses, vcf_stream);
+		//////////////////////////
+		vcf_stream << "END:VCARD\n\n";
+	}
+
+	vcf_stream.close();
 }
+
+////////////////
+
+////////////////
 
 int main() {
 	system("chcp 65001 >NUL");
-	setlocale(LC_ALL, "en_US.utf8");
+	//setlocale(LC_ALL, "en_US.utf8");
 
 	std::vector<std::string> lines;
 
-	collect_lines(lines);
+	collect_lines(lines, "AAA.vcf");
 
 	std::vector<ContactData> cards;
 
 	analyse_lines(lines, cards);
 
-	print_cards(cards);
+	//print_cards(cards);
+
+	make_vcf(cards, "D:\\ForCPP\\VCFE\\TESTITTO.vcf");
 
 	return 0;
 }
 
 #endif // NOUSE
 
-//Создать разделении компании отдела
+//
+//
 //Создать профиль с текстом на латинице
 //Может ли карточка содержать несколько NOTE
 //Увеличить количество дат
-//
-//
 //
 //

@@ -1,8 +1,36 @@
+#include <string>
+#include <vector>
+#include <memory>
+#include <regex>
+
 extern "C" {
-#include "vcfe_deencode_funcs.h"
+#include "vcfe_decode_from_hex.h"
+}
+#include "vcfe_regex_parsers.h"
+
+///=///=///=///=///=///=///=///=///=///=///=///=///=///=
+
+std::string decode(const char* str) {
+	char* utf8_string = hex_string_to_utf8_string(str);
+	std::string decoded_string(utf8_string);
+	free(utf8_string);
+
+	return decoded_string;
 }
 
-#include "vcfe_regex_parsers.h"
+///=///=///=///=///=///=///=///=///=///=///=///=///=///=
+
+void version_parser(const std::string& line, std::unique_ptr<ContactData>& current_card) {
+	std::smatch mm;
+
+	//VERSION:2.1
+	std::regex version_pattern("^VERSION:([^:]*)$");
+
+	if (std::regex_search(line, mm, version_pattern)) {
+		current_card->version = mm[1].str();
+		return;
+	}
+}
 
 ///=///=///=///=///=///=///=///=///=///=///=///=///=///=
 
@@ -17,15 +45,13 @@ void name_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 
 	if (std::regex_search(line, mm, pattern1)) {
 		// Extract names from the matched parts
-		for (size_t i = 1; i < mm.size(); ++i) {
+		for (int i = 1; i < mm.size(); ++i) {
 			if (mm[i].str().empty()) {
 				continue;
 			}
 			if (is_to_decode) {
-				char newname_buffer[512];
-				decode_hex_string(mm[i].str().c_str(), newname_buffer);
-				std::string decoded_string(newname_buffer);
-				current_card->names[i] = decoded_string;
+				current_card->names[i] = decode(mm[i].str().c_str());
+				current_card->names.set_encoded_state();
 			}
 			else {
 				current_card->names[i] = mm[i].str();
@@ -39,7 +65,13 @@ void name_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 
 void phonetics_parser(const std::string& line, std::unique_ptr<ContactData>& current_card) {
 	std::smatch mm;
-	bool is_to_decode = (line.contains("ENCODING=QUOTED-PRINTABLE")) ? true : false;
+
+	bool is_to_decode{ false };
+	if (line.contains("ENCODING=QUOTED-PRINTABLE")) {
+		is_to_decode = true;
+		current_card->phonetic_name.set_encoded_state();
+	}
+
 	///////////////////////////////////
 //X-PHONETIC-FIRST-NAME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0
 //X-PHONETIC-MIDDLE-NAME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0
@@ -50,35 +82,26 @@ void phonetics_parser(const std::string& line, std::unique_ptr<ContactData>& cur
 	if (std::regex_search(line, mm, phonetic_pattern)) {
 		if (line.contains("X-PHONETIC-FIRST-NAME")) {
 			if (is_to_decode) {
-				char newphonetic_buffer[512];
-				decode_hex_string(mm[1].str().c_str(), newphonetic_buffer);
-				std::string decoded_string(newphonetic_buffer);
-				current_card->phonetic_name.first = decoded_string;
+				current_card->phonetic_name.first = decode(mm[1].str().c_str());
 			}
 			else {
-				current_card->phonetic_name.first = mm[0];
+				current_card->phonetic_name.first = mm[1];
 			}
 		}
 		else if (line.contains("X-PHONETIC-MIDDLE-NAME")) {
 			if (is_to_decode) {
-				char newphonetic_buffer[512];
-				decode_hex_string(mm[1].str().c_str(), newphonetic_buffer);
-				std::string decoded_string(newphonetic_buffer);
-				current_card->phonetic_name.middle = decoded_string;
+				current_card->phonetic_name.middle = decode(mm[1].str().c_str());
 			}
 			else {
-				current_card->phonetic_name.middle = mm[0];
+				current_card->phonetic_name.middle = mm[1];
 			}
 		}
 		else if (line.contains("X-PHONETIC-LAST-NAME")) {
 			if (is_to_decode) {
-				char newphonetic_buffer[512];
-				decode_hex_string(mm[1].str().c_str(), newphonetic_buffer);
-				std::string decoded_string(newphonetic_buffer);
-				current_card->phonetic_name.last = decoded_string;
+				current_card->phonetic_name.last = decode(mm[1].str().c_str());
 			}
 			else {
-				current_card->phonetic_name.last = mm[0];
+				current_card->phonetic_name.last = mm[1];
 			}
 		}
 		return;
@@ -89,7 +112,12 @@ void phonetics_parser(const std::string& line, std::unique_ptr<ContactData>& cur
 
 void nick_parser(const std::string& line, std::unique_ptr<ContactData>& current_card) {
 	std::smatch mm;
-	bool is_to_decode = (line.contains("ENCODING=QUOTED-PRINTABLE")) ? true : false;
+
+	bool is_to_decode{ false };
+	if (line.contains("ENCODING=QUOTED-PRINTABLE")) {
+		is_to_decode = true;
+		current_card->nickname.set_encoded_state();
+	}
 
 	//////////////////////////////////////////////
 	//X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/nickname;=D0
@@ -97,13 +125,10 @@ void nick_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 
 	if (std::regex_search(line, mm, nick_pattern)) {
 		if (is_to_decode) {
-			char newname_buffer[512];
-			decode_hex_string(mm[1].str().c_str(), newname_buffer);
-			std::string decoded_string(newname_buffer);
-			current_card->nickname = decoded_string;
+			current_card->nickname.nick = decode(mm[1].str().c_str());
 		}
 		else {
-			current_card->nickname = mm[1];
+			current_card->nickname.nick = mm[1];
 		}
 		return;
 	}
@@ -116,18 +141,18 @@ void tel_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 
 	///////////////////////////////////
 //TEL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0):33333
-	std::regex pattern1("^TEL;X-CUSTOM\\([^,]*,[^,]*,(.*)\\):(.*)$");
+	std::regex tel_pattern(
+		"^TEL;X-CUSTOM\\(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,(.*)\\):(.*)$"
+	);
 
-	if (std::regex_search(line, mm, pattern1)) {
+	if (std::regex_search(line, mm, tel_pattern)) {
 		std::unique_ptr<Telephones> new_tel(new Telephones);
 
-		char typename_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), typename_buffer);
-		std::string decoded_typename(typename_buffer);
-		decoded_typename.erase(decoded_typename.size() - 1);
+		new_tel->type = decode(mm[1].str().c_str());
 
-		new_tel->type = decoded_typename;
-		new_tel->number = mm[2].str();
+		new_tel->number = mm[2].str().c_str();
+
+		new_tel->set_encoded_state();
 
 		current_card->tels.push_back(std::move(*new_tel));
 		return;
@@ -135,9 +160,9 @@ void tel_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 	//////////////////////////////////////////
 //TEL;VOICE:77777
 //TEL;X-CustomisoNum:66666
-	std::regex pattern2("^TEL;([^:]+):(.+)$");
+	tel_pattern.assign("^TEL;([^:]+):(.+)$");
 
-	if (std::regex_search(line, mm, pattern2)) {
+	if (std::regex_search(line, mm, tel_pattern)) {
 		std::unique_ptr<Telephones> new_tel(new Telephones);
 
 		std::string decoded_typename(mm[1].str());
@@ -161,20 +186,16 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	/////////////////////////////////////
 	//EMAIL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0=9E=D1=81=D0=BE=D0=B1=D0=9F=D0=BE=D1=87=D1=82=D0=B0);CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=BF
-	std::regex pattern1("^EMAIL;X-CUSTOM\\([^,]*,[^,]*,(.*)\\);[^;]*;[^;]*:(.*)$");
+	std::regex email_pattern("^EMAIL;X-CUSTOM\\([^,]*,[^,]*,(.*)\\);[^;]*;[^;]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern1)) {
+	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
-		char typename_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), typename_buffer);
-		std::string decoded_type(typename_buffer);
-		new_email->type = decoded_type;
+		new_email->type = decode(mm[1].str().c_str());
 
-		char newname_buffer[512];
-		decode_hex_string(mm[2].str().c_str(), newname_buffer);
-		std::string decoded_address(newname_buffer);
-		new_email->address = decoded_address;
+		new_email->address = decode(mm[2].str().c_str());
+
+		new_email->set_encoded_state();
 
 		current_card->emails.push_back(std::move(*new_email));
 		return;
@@ -182,18 +203,16 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	/////////////////////////////////////
 	//EMAIL;HOME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=AD
-	std::regex pattern3("^EMAIL;([^;]*);[^;]*;[^;]*:(.*)$");
+	email_pattern.assign("^EMAIL;([^;]*);[^;]*;[^;]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern3)) {
+	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
 		new_email->type = mm[1].str();
 
-		char newname_buffer[512];
-		decode_hex_string(mm[2].str().c_str(), newname_buffer);
-		std::string decoded_string(newname_buffer);
+		new_email->address = decode(mm[2].str().c_str());
 
-		new_email->address = decoded_string;
+		new_email->set_encoded_state();
 
 		current_card->emails.push_back(std::move(*new_email));
 		return;
@@ -201,17 +220,16 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	/////////////////////////////////////
 	//EMAIL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=B4
-	std::regex pattern2("^EMAIL;[^;]*;[^:]*:(.*)$");
+	email_pattern.assign("^EMAIL;[^;]*;[^:]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern2)) {
+	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
 		new_email->type = "OTHER";
 
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string decoded_address(newname_buffer);
-		new_email->address = decoded_address;
+		new_email->address = decode(mm[1].str().c_str());
+
+		new_email->set_encoded_state();
 
 		current_card->emails.push_back(std::move(*new_email));
 		return;
@@ -219,9 +237,9 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	/////////////////////////////////////
 	//EMAIL;WORK:workmail
-	std::regex pattern4("^EMAIL;([^;]+):(.+)$");
+	email_pattern.assign("^EMAIL;([^;]+):(.+)$");
 
-	if (std::regex_search(line, mm, pattern4)) {
+	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
 		new_email->type = mm[1].str();
@@ -233,9 +251,9 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	/////////////////////////////////////
 	//EMAIL:email1
-	std::regex pattern5("^EMAIL:(.*)$");
+	email_pattern.assign("^EMAIL:(.*)$");
 
-	if (std::regex_search(line, mm, pattern5)) {
+	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
 		new_email->type = "OTHER";
@@ -253,10 +271,10 @@ void address_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 
 	////////////////////////////////////
 	//ADR;WORK:;;Street;City;Region;Index;Country
-	std::regex address_pattern1("^ADR;([^;]*):;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
+	std::regex address_pattern("^ADR;([^;]*):;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
 	std::smatch mm;
 
-	if (std::regex_search(line, mm, address_pattern1)) {
+	if (std::regex_search(line, mm, address_pattern)) {
 		new_address->type = mm[1];
 		new_address->street = mm[2];
 		new_address->city = mm[3];
@@ -270,18 +288,15 @@ void address_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 
 	////////////////////////////////////
 	//ADR;HOME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;=D0;=D0;=D0;=D0;=D0
-	std::regex address_pattern2("^ADR;([^;]*);[^;]*;[^;]*:;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
+	address_pattern.assign("^ADR;([^;]*);[^;]*;[^;]*:;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
 
-	if (std::regex_search(line, mm, address_pattern2)) {
+	if (std::regex_search(line, mm, address_pattern)) {
 		new_address->type = mm[1];
 
 		std::vector<std::string> scric;
 
 		for (size_t i = 2; i < mm.size(); ++i) {
-			char buffer1[512];
-			decode_hex_string(mm[i].str().c_str(), buffer1);
-			std::string decoded_string(buffer1);
-			scric.push_back(decoded_string);
+			scric.push_back(decode(mm[i].str().c_str()));
 		}
 
 		new_address->street = scric[0];
@@ -289,6 +304,8 @@ void address_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 		new_address->region = scric[2];
 		new_address->index = scric[3];
 		new_address->country = scric[4];
+
+		new_address->set_encoded_state();
 
 		current_card->addresses.push_back(*new_address);
 		return;
@@ -296,18 +313,15 @@ void address_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 
 	////////////////////////////////////
 	//ADR;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;=D0;=D0;=D0;=D0;=D0
-	std::regex address_pattern3("^ADR;[^;]*;[^;]*:;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
+	address_pattern.assign("^ADR;[^;]*;[^;]*:;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
 
-	if (std::regex_search(line, mm, address_pattern3)) {
+	if (std::regex_search(line, mm, address_pattern)) {
 		new_address->type = "OTHER";
 
 		std::vector<std::string> scric;
 
 		for (size_t i = 1; i < mm.size(); ++i) {
-			char buffer1[512];
-			decode_hex_string(mm[i].str().c_str(), buffer1);
-			std::string decoded_string(buffer1);
-			scric.push_back(decoded_string);
+			scric.push_back(decode(mm[i].str().c_str()));
 		}
 
 		new_address->street = scric[0];
@@ -315,6 +329,8 @@ void address_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 		new_address->region = scric[2];
 		new_address->index = scric[3];
 		new_address->country = scric[4];
+
+		new_address->set_encoded_state();
 
 		current_card->addresses.push_back(*new_address);
 		return;
@@ -330,38 +346,25 @@ void company_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 
 	////////////////////////////////////
 	//ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=9A
-	std::regex pattern1("^ORG;[^;]*;[^;]*:(.*)$");
+	//std::regex pattern1("^ORG;[^;]*;[^;]*:(.*)$");
+	std::regex company_pattern("^ORG;[^;]*;[^;]*:([^;]*)=3B([^;]*)");
 
-	if (std::regex_search(line, mm, pattern1)) {
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string comdep(newname_buffer);
-
-		std::regex pattern1("([^;]*);([^;]*)");
-		if (std::regex_search(comdep, mm, pattern1)) {
-			current_card->workinfo.company = mm[1].str();
-			current_card->workinfo.department = mm[2].str();
-		}
+	if (std::regex_search(line, mm, company_pattern)) {
+		current_card->workinfo.company = decode(mm[1].str().c_str());
+		current_card->workinfo.department = decode(mm[2].str().c_str());
+		//}
 
 		return;
 	}
 
 	////////////////////////////////////
 	//ORG:Company;Department
-	std::regex pattern3("^ORG:([^;]*);([^;]*)$");
+	company_pattern.assign("^ORG:([^;]*);([^;]*)$");
 
-	if (std::regex_search(line, mm, pattern3)) {
-		char company_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), company_buffer);
-		std::string decoded_company(company_buffer);
+	if (std::regex_search(line, mm, company_pattern)) {
+		current_card->workinfo.company = decode(mm[1].str().c_str());
 
-		current_card->workinfo.company = decoded_company;
-
-		char department_buffer[512];
-		decode_hex_string(mm[2].str().c_str(), department_buffer);
-		std::string decoded_department(department_buffer);
-
-		current_card->workinfo.department = decoded_department;
+		current_card->workinfo.department = decode(mm[2].str().c_str());
 
 		return;
 	}
@@ -374,27 +377,19 @@ void title_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	////////////////////////////////////
 	//TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=94
-	std::regex pattern2("^TITLE;[^;]*;[^;]*:(.*)$");
+	std::regex title_pattern("^TITLE;[^;]*;[^;]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern2)) {
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string decoded_string(newname_buffer);
-
-		current_card->workinfo.title = decoded_string;
+	if (std::regex_search(line, mm, title_pattern)) {
+		current_card->workinfo.title = decode(mm[1].str().c_str());
 		return;
 	}
 
 	////////////////////////////////////
 	//TITLE:Position
-	std::regex pattern4("^TITLE:(.*)$");
+	title_pattern.assign("^TITLE:(.*)$");
 
-	if (std::regex_search(line, mm, pattern4)) {
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string decoded_string(newname_buffer);
-
-		current_card->workinfo.title = decoded_string;
+	if (std::regex_search(line, mm, title_pattern)) {
+		current_card->workinfo.title = decode(mm[1].str().c_str());
 		return;
 	}
 }
@@ -406,23 +401,19 @@ void url_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 
 	////////////////////////////////////
 	//URL:www.place.org
-	std::regex pattern1("^URL:(.*)$");
+	std::regex url_pattern("^URL:(.*)$");
 
-	if (std::regex_search(line, mm, pattern1)) {
+	if (std::regex_search(line, mm, url_pattern)) {
 		current_card->urls.push_back(mm[1]);
 		return;
 	}
 
 	////////////////////////////////////
 	//URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0
-	std::regex pattern2("^URL;[^;]*;[^;]*:(.*)$");
+	url_pattern.assign("^URL;[^;]*;[^;]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern2)) {
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string decoded_string(newname_buffer);
-
-		current_card->urls.push_back(decoded_string);
+	if (std::regex_search(line, mm, url_pattern)) {
+		current_card->urls.push_back(decode(mm[1].str().c_str()));
 		return;
 	}
 }
@@ -434,23 +425,20 @@ void note_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 
 	////////////////////////////////////
 	//NOTE:Write notes here
-	std::regex pattern1("^NOTE:(.*)$");
+	std::regex note_pattern("^NOTE:(.*)$");
 
-	if (std::regex_search(line, mm, pattern1)) {
+	if (std::regex_search(line, mm, note_pattern)) {
 		current_card->note = mm[1];
 		return;
 	}
 
 	////////////////////////////////////
 	//NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0
-	std::regex pattern2("^NOTE;[^;]*;[^;]*:(.*)$");
+	//std::regex pattern2("^NOTE;[^;]*;[^;]*:(.*)$");
+	note_pattern.assign("^NOTE;[^;]*;[^;]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern2)) {
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string decoded_string(newname_buffer);
-
-		current_card->note = decoded_string;
+	if (std::regex_search(line, mm, note_pattern)) {
+		current_card->note = decode(mm[1].str().c_str());
 		return;
 	}
 }
@@ -461,18 +449,18 @@ void events_parser(const std::string& line, std::unique_ptr<ContactData>& curren
 	std::smatch mm;
 	std::unique_ptr<Event> event(new Event);
 
-	std::regex event_pattern1("(\\d{4})-(\\d{2})-(\\d{2})");
-	std::regex event_pattern2("--(\\d{2})-(\\d{2})");
+	std::regex event_pattern01("(\\d{4})-(\\d{2})-(\\d{2})");
+	std::regex event_pattern02("--(\\d{2})-(\\d{2})");
 
 	auto num_parse = [&](const std::string& eventname, const std::string& toparse) {
-		if (std::regex_search(toparse, mm, event_pattern1)) {
+		if (std::regex_search(toparse, mm, event_pattern01)) {
 			event->event_name = eventname;
 			event->year = mm[1].str();
 			event->month = mm[2].str();
 			event->day = mm[3].str();
 			current_card->events.push_back(std::move(*event));
 		}
-		else if (std::regex_search(toparse, mm, event_pattern2)) {
+		else if (std::regex_search(toparse, mm, event_pattern02)) {
 			event->event_name = eventname;
 			event->month = mm[1].str();
 			event->day = mm[2].str();
@@ -481,8 +469,8 @@ void events_parser(const std::string& line, std::unique_ptr<ContactData>& curren
 		};
 
 	////////////////////////////////////
-	std::regex pattern1("^BDAY:(\\d{4})-(\\d{2})-(\\d{2})");
-	if (std::regex_search(line, mm, pattern1)) {
+	std::regex event_pattern("^BDAY:(\\d{4})-(\\d{2})-(\\d{2})");
+	if (std::regex_search(line, mm, event_pattern)) {
 		event->event_name = "Birthday";
 		event->year = mm[1].str();
 		event->month = mm[2].str();
@@ -492,36 +480,29 @@ void events_parser(const std::string& line, std::unique_ptr<ContactData>& curren
 	}
 
 	////////////////////////////////////
-	std::regex pattern2("contact_event;(.*);1;");
+	event_pattern.assign("contact_event;(.*);1;");
 
-	if (std::regex_search(line, mm, pattern2)) {
+	if (std::regex_search(line, mm, event_pattern)) {
 		std::string full_event = mm[0].str();
 		num_parse("Anniversary", full_event);
 		return;
 	}
 
 	////////////////////////////////////
-	std::regex pattern3("contact_event;(.*);2;");
+	event_pattern.assign("contact_event;(.*);2;");
 
-	if (std::regex_search(line, mm, pattern3)) {
+	if (std::regex_search(line, mm, event_pattern)) {
 		std::string full_event = mm[0].str();
 		num_parse("Other", full_event);
 		return;
 	}
 
 	////////////////////////////////////
-	std::regex pattern4("CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;([^;]*);[^;]*;([^;]*);");
+	event_pattern.assign("CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;([^;]*);[^;]*;([^;]*);");
 
-	if (std::regex_search(line, mm, pattern4)) {
-		char newevent_buffer[128];
-		decode_hex_string(mm[1].str().c_str(), newevent_buffer);
-		std::string decoded_event(newevent_buffer);
-
-		char newname_buffer[512];
-		decode_hex_string(mm[2].str().c_str(), newname_buffer);
-		std::string decoded_eventname(newname_buffer);
-
-		num_parse(decoded_eventname, decoded_event);
+	if (std::regex_search(line, mm, event_pattern)) {
+		num_parse(decode(mm[2].str().c_str()),
+			decode(mm[1].str().c_str()));
 		return;
 	}
 }
@@ -558,9 +539,9 @@ void socials_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 		newname = sns_name.substr(2);
 	}
 
-	std::regex pattern1("^X-[^;:]*:(.*)$");
+	std::regex socials_pattern("^X-[^;:]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern1)) {
+	if (std::regex_search(line, mm, socials_pattern)) {
 		sns->name = newname;
 		sns->contact = mm[1];
 
@@ -569,35 +550,23 @@ void socials_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 	}
 
 	////////////////////////////////////
-	std::regex pattern3("^X-CUSTOM[^,]*,[^,]*,([^;\\)]*)\\);[^;]*;[^;:]*:(.*)$");
+	socials_pattern.assign("^X-CUSTOM[^,]*,[^,]*,([^;\\)]*)\\);[^;]*;[^;:]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern3)) {
-		char sns_name_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), sns_name_buffer);
-		std::string new_sns_name(sns_name_buffer);
-
-		char contact_buffer[512];
-		decode_hex_string(mm[2].str().c_str(), contact_buffer);
-		std::string decoded_contact(contact_buffer);
-
-		sns->name = new_sns_name;
-		sns->contact = decoded_contact;
+	if (std::regex_search(line, mm, socials_pattern)) {
+		sns->name = decode(mm[1].str().c_str());
+		sns->contact = decode(mm[2].str().c_str());
 
 		current_card->socials.push_back(*sns);
 		return;
 	}
 
 	////////////////////////////////////
-	std::regex pattern2("^X-[^;]*;[^;]*;[^;]*:(.*)$");
+	socials_pattern.assign("^X-[^;]*;[^;]*;[^;]*:(.*)$");
 
-	if (std::regex_search(line, mm, pattern2)) {
+	if (std::regex_search(line, mm, socials_pattern)) {
 		sns->name = newname;
 
-		char newname_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), newname_buffer);
-		std::string decoded_string(newname_buffer);
-
-		sns->contact = decoded_string;
+		sns->contact = decode(mm[1].str().c_str());
 
 		current_card->socials.push_back(*sns);
 		return;
@@ -663,9 +632,9 @@ void relations_parser(const std::string& line, std::unique_ptr<ContactData>& cur
 		};
 
 	///////////////////////////////////////
-	std::regex pattern1("^[^;]*relation;([^;]*);([^;]*);([^;]*);");
+	std::regex relations_pattern("^[^;]*relation;([^;]*);([^;]*);([^;]*);");
 
-	if (std::regex_search(line, mm, pattern1)) {
+	if (std::regex_search(line, mm, relations_pattern)) {
 		relate->name = mm[1];
 		std::string iii = mm[2].str();
 		relate->type_num = std::stoi(iii);
@@ -678,24 +647,15 @@ void relations_parser(const std::string& line, std::unique_ptr<ContactData>& cur
 	}
 	////////////////////////////////////
 
-	std::regex pattern2("^[^;]*;[^;]*;[^;]*relation;([^;]*);([^;]*);([^;]*);");
+	relations_pattern.assign("^[^;]*;[^;]*;[^;]*relation;([^;]*);([^;]*);([^;]*);");
 
-	if (std::regex_search(line, mm, pattern2)) {
-		char relate_name_buffer[512];
-		decode_hex_string(mm[1].str().c_str(), relate_name_buffer);
-		std::string new_relate_name(relate_name_buffer);
-		relate->name = new_relate_name;
+	if (std::regex_search(line, mm, relations_pattern)) {
+		relate->name = decode(mm[1].str().c_str());
 
-		char relate_num_buffer[32];
-		decode_hex_string(mm[2].str().c_str(), relate_num_buffer);
-		std::string new_relate_num(relate_num_buffer);
-		relate->type_num = std::stoi(new_relate_num);
+		relate->type_num = std::stoi(decode(mm[2].str().c_str()));
 
-		char relate_type_buffer[512];
 		if (mm[3].str() != "") {
-			decode_hex_string(mm[3].str().c_str(), relate_type_buffer);
-			std::string new_relate_type(relate_type_buffer);
-			type_name = new_relate_type;
+			type_name = decode(mm[3].str().c_str());
 		}
 		select_type(relate->type_num, type_name);
 		relate->type_name = type_name;

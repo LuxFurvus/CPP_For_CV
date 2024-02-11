@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -135,22 +135,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="vcfe_code_dict.h" />
     <ClInclude Include="vcfe_decode_from_hex.h" />
-    <ClInclude Include="vcfe_deencode_funcs.h" />
-    <ClInclude Include="vcfe_encode_symbol.h" />
     <ClInclude Include="vcfe_encode_to_hex.h" />
+    <ClInclude Include="vcfe_printer_functions.h" />
     <ClInclude Include="vcfe_regex_parsers.h" />
-    <ClInclude Include="vcfe_text_processor.h" />
+    <ClInclude Include="vcfe_utility_functions.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="c_func_test.c" />
     <ClCompile Include="vcfe_decode_from_hex.c" />
-    <ClCompile Include="vcfe_deencode_funcs.c" />
     <ClCompile Include="vcfe_encode_to_hex.c" />
     <ClCompile Include="vcfe_main.cpp" />
+    <ClCompile Include="vcfe_printer_functions.cpp" />
     <ClCompile Include="vcfe_regex_parsers.cpp" />
-    <ClCompile Include="vcfe_text_processor.cpp" />
+    <ClCompile Include="vcfe_utility_functions.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="AAA.vcf" />
+    <None Include="TESTITTO.vcf" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
