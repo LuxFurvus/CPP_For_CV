@@ -182,11 +182,11 @@ void analyse_lines(std::vector<std::string>& lines, std::vector<ContactData>& da
 			address_parser(line, current_card);
 			continue;
 		}
-		if (line.contains("ORG;")) {
+		if (line.contains("ORG;") || line.contains("ORG:")) {
 			company_parser(line, current_card);
 			continue;
 		}
-		if (line.contains("TITLE;")) {
+		if (line.contains("TITLE;") || line.contains("TITLE:")) {
 			title_parser(line, current_card);
 			continue;
 		}

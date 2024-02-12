@@ -166,3 +166,45 @@ void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& s
 	ss << "\n";
 	return;
 }
+
+//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+
+void print_vcf_company(const WorkInfo& work, std::ofstream& ss) {
+
+	if (work.is_empty()) return;
+
+	if (work.is_encoded()) {
+		ss << "ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+		if (!work.company.empty()) {
+			ss << utf8_string_to_hex_string(work.company.c_str());
+		}
+		ss << "=3B";
+		if (!work.department.empty()) {
+			ss << utf8_string_to_hex_string(work.department.c_str());
+		}
+		ss << "\n";
+		if (!work.title.empty()) {
+			ss << "TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+			ss << utf8_string_to_hex_string(work.title.c_str());
+			ss << "\n";
+		}
+	}
+	else {
+		ss << "ORG:";
+		if (!work.company.empty()) {
+			ss << work.company;
+		}
+		ss << ";";
+		if (!work.department.empty()) {
+			ss << work.department;
+		}
+		ss << "\n";
+		if (!work.title.empty()) {
+			ss << "TITLE:";
+			ss << work.title;
+			ss << "\n";
+		}
+	}
+	ss << "\n";
+	return;
+}

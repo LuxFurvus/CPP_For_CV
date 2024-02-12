@@ -352,7 +352,7 @@ void company_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 	if (std::regex_search(line, mm, company_pattern)) {
 		current_card->workinfo.company = decode(mm[1].str().c_str());
 		current_card->workinfo.department = decode(mm[2].str().c_str());
-		//}
+		current_card->workinfo.set_encoded_state();
 
 		return;
 	}
@@ -362,9 +362,10 @@ void company_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 	company_pattern.assign("^ORG:([^;]*);([^;]*)$");
 
 	if (std::regex_search(line, mm, company_pattern)) {
-		current_card->workinfo.company = decode(mm[1].str().c_str());
 
-		current_card->workinfo.department = decode(mm[2].str().c_str());
+		current_card->workinfo.company = mm[1].str().c_str();
+
+		current_card->workinfo.department = mm[2].str().c_str();
 
 		return;
 	}
@@ -381,6 +382,7 @@ void title_parser(const std::string& line, std::unique_ptr<ContactData>& current
 
 	if (std::regex_search(line, mm, title_pattern)) {
 		current_card->workinfo.title = decode(mm[1].str().c_str());
+		current_card->workinfo.set_encoded_state();
 		return;
 	}
 
@@ -389,7 +391,7 @@ void title_parser(const std::string& line, std::unique_ptr<ContactData>& current
 	title_pattern.assign("^TITLE:(.*)$");
 
 	if (std::regex_search(line, mm, title_pattern)) {
-		current_card->workinfo.title = decode(mm[1].str().c_str());
+		current_card->workinfo.title = mm[1].str().c_str();
 		return;
 	}
 }

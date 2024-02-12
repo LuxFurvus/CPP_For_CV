@@ -11,61 +11,57 @@
 extern "C" {
 #include "vcfe_encode_to_hex.h"
 }
-
+#include "vcfe_data_containers.h"
 #include "vcfe_utility_functions.h"
 #include "vcfe_printer_functions.h"
 ////////////////
 
 /*
 
-ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=9A=D0=BE=D0=BC=D0=BF=D0=B0=D0=BD=D0=B8=D1=8F=3B=D0=9E=D1=82=D0=B4=D0=B5=D0=BB
+URL:www.site.com
+URL:www.place.org
+URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=92=D0=B5=D0=B1=2D=D1=81=D0=B0=D0=B9=D1=82
 
-TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=94=D0=BE=D0=BB=D0=B6=D0=BD=D0=BE=D1=81=D1=82=D1=8C
-
-ORG:Company;Department
-
-TITLE:Position
+NOTE:Write notes here
+NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=97=D0=B0=D0=BC=D0=B5=D1=82=D0=BA=D0=B8=20=D0=B7=D0=B0=D0=BF=D0=B8=
 
 */
 
-void print_vcf_org(const std::vector<Addresses>& addresses, std::ofstream& ss) {
+void print_vcf_url(const WorkInfo& work, std::ofstream& ss) {
 
-	auto bunch_printer = [&](const Addresses& adr, const char* delim, bool to_encode = true) {
+	if (work.is_empty()) return;
 
-		auto no_encode = [](const char* entry) -> char* {
-			return const_cast<char*>(entry);
-		};
-
-		char* (*encoder)(const char*);
-		encoder = (to_encode)? utf8_string_to_hex_string : no_encode;
-
-		ss << encoder(adr.street.c_str()) << delim;
-		ss << encoder(adr.city.c_str()) << delim;
-		ss << encoder(adr.region.c_str()) << delim;
-		ss << encoder(adr.index.c_str()) << delim;
-		ss << encoder(adr.country.c_str()) << delim;
-	};
-
-	for (auto& adr : addresses) {
-		if (adr.is_encoded()) {
-			ss << "X-SAMSUNGADR;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;";
-			bunch_printer(adr, ";");
-			bunch_printer(adr, "=20");
-			ss << "\n";
-			ss << "ADR;";
-			ss << "CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;";
-			bunch_printer(adr, ";");
+	if (work.is_encoded()) {
+		ss << "ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+		if (!work.company.empty()) {
+			ss << utf8_string_to_hex_string(work.company.c_str());
 		}
-		else {
-			ss << "X-SAMSUNGADR;ENCODING=QUOTED-PRINTABLE:;;";
-			bunch_printer(adr, ";");
-			bunch_printer(adr, "=20");
-			ss << "\n";
-			ss << "ADR;";
-			ss << adr.type << ":;;";
-			bunch_printer(adr, ";", false);
+		ss << "=3B";
+		if (!work.department.empty()) {
+			ss << utf8_string_to_hex_string(work.department.c_str());
 		}
 		ss << "\n";
+		if (!work.title.empty()) {
+			ss << "TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+			ss << utf8_string_to_hex_string(work.title.c_str());
+			ss << "\n";
+		}
+	}
+	else {
+		ss << "ORG:";
+		if (!work.company.empty()) {
+			ss << work.company;
+		}
+		ss << ";";
+		if (!work.department.empty()) {
+			ss << work.department;
+		}
+		ss << "\n";
+		if (!work.title.empty()) {
+			ss << "TITLE:";
+			ss << work.title;
+			ss << "\n";
+		}
 	}
 	ss << "\n";
 	return;
@@ -91,6 +87,7 @@ void make_vcf(const std::vector<ContactData>& cards, const char* vcf_name) {
 		print_vcf_telephones(card.tels, vcf_stream);
 		print_vcf_email(card.emails, vcf_stream);
 		print_vcf_address(card.addresses, vcf_stream);
+		print_vcf_company(card.workinfo, vcf_stream);
 		//////////////////////////
 		vcf_stream << "END:VCARD\n\n";
 	}
@@ -116,7 +113,7 @@ int main() {
 
 	//print_cards(cards);
 
-	make_vcf(cards, "D:\\ForCPP\\VCFE\\TESTITTO.vcf");
+	make_vcf(cards, "D:\\ForCPP\\CPP_For_CV\\06_VCF_Editor_Regex\\TESTITTO.vcf");
 
 	return 0;
 }

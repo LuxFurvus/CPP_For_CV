@@ -25,7 +25,7 @@ void print_vcf_nickname(const NickName& nickname, std::ofstream& ss);
 void print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss);
 void print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss);
 void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& ss);
-
+void print_vcf_company(const WorkInfo& work, std::ofstream& ss);
 
 
 #endif // VCFE_PRINTER_FUNCTIONS_H

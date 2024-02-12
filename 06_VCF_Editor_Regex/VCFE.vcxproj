@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="vcfe_data_containers.h" />
     <ClInclude Include="vcfe_decode_from_hex.h" />
     <ClInclude Include="vcfe_encode_to_hex.h" />
     <ClInclude Include="vcfe_printer_functions.h" />
