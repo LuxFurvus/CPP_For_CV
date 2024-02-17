@@ -52,7 +52,7 @@ void run() {
     int counter = 1;
     std::stringstream ss;
     while (true) {
-        std::string message = "[" + get_current_time() + "] \"" + client_name + "\"";
+        std::string message = "[" + get_current_time() + "] " + client_name;
         send(sock, message.c_str(), message.length(), 0);
 
         ss.str("");
