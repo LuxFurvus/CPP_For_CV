@@ -114,16 +114,16 @@ struct Addresses : public VcfEntry {
 	}
 };
 
+enum class EventType {
+	SPEC, ANNIV, OTHER, BDAY, ENCODED
+};
+
 struct Event : public VcfEntry {
 	std::string event_name;
 	std::string day;
 	std::string month;
 	std::string year;
-};
-
-struct SocialNet : public VcfEntry {
-	std::string name;
-	std::string contact;
+	EventType event_type;
 };
 
 struct WorkInfo : public VcfEntry {
@@ -146,12 +146,6 @@ struct NoteString : public VcfEntry {
 	std::string note_text;
 };
 
-struct Relation : public VcfEntry {
-	std::string name;
-	std::string type_name;
-	int type_num;
-};
-
 const std::vector<std::string> socials_names{
 	"X-WHATSAPP",
 	"X-FACEBOOK",
@@ -164,6 +158,18 @@ const std::vector<std::string> socials_names{
 	"X-JABBER",
 	"X-MSN",
 	"X-CUSTOM("
+};
+
+struct SocialNet : public VcfEntry {
+	std::string name;
+	std::string contact;
+	bool is_custom{false};
+};
+
+struct Relation : public VcfEntry {
+	std::string name;
+	std::string type_name;
+	int type_num;
 };
 
 struct ContactData {

@@ -42,6 +42,7 @@ void name_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 	std::regex pattern1("^N[^:]*:(?:[^:]*:)*([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
 
 	bool is_to_decode = (line.contains("ENCODING=QUOTED-PRINTABLE")) ? true : false;
+	if (is_to_decode)current_card->names.set_encoded_state();
 
 	if (std::regex_search(line, mm, pattern1)) {
 		// Extract names from the matched parts
@@ -50,11 +51,10 @@ void name_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 				continue;
 			}
 			if (is_to_decode) {
-				current_card->names[i] = decode(mm[i].str().c_str());
-				current_card->names.set_encoded_state();
+				current_card->names[i-1] = decode(mm[i].str().c_str());				
 			}
 			else {
-				current_card->names[i] = mm[i].str();
+				current_card->names[i-1] = mm[i].str();
 			}
 		}
 		return;
@@ -476,6 +476,7 @@ void events_parser(const std::string& line, std::unique_ptr<ContactData>& curren
 		}
 		};
 
+	//BDAY:2000-01-01
 	////////////////////////////////////
 	std::regex event_pattern("^BDAY:(\\d{4})-(\\d{2})-(\\d{2})");
 	if (std::regex_search(line, mm, event_pattern)) {
@@ -483,35 +484,53 @@ void events_parser(const std::string& line, std::unique_ptr<ContactData>& curren
 		event->year = mm[1].str();
 		event->month = mm[2].str();
 		event->day = mm[3].str();
+		event->event_type = EventType::BDAY;
 		current_card->events.push_back(std::move(*event));
 		return;
 	}
 
+	//X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;2024-01-12;0;SpecDate;;;;;;;;;;;;0
+	////////////////////////////////////
+	event_pattern.assign("contact_event;(.*);0;([^;]*)");
+
+	if (std::regex_search(line, mm, event_pattern)) {
+		std::string full_event = mm[1].str();
+		event->event_type = EventType::SPEC;
+		num_parse(mm[2].str(), full_event);
+		return;
+	}
+
+	//X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;--01-12;1;;;;;;;;;;;;;0
 	////////////////////////////////////
 	event_pattern.assign("contact_event;(.*);1;");
 
 	if (std::regex_search(line, mm, event_pattern)) {
 		std::string full_event = mm[0].str();
+		event->event_type = EventType::ANNIV;
 		num_parse("Anniversary", full_event);
 		return;
 	}
 
+	//X - ANDROID - CUSTOM:vnd.android.cursor.item / contact_event; --04 - 12; 2;;;;;;;;;;;;; 0
 	////////////////////////////////////
 	event_pattern.assign("contact_event;(.*);2;");
 
 	if (std::regex_search(line, mm, event_pattern)) {
 		std::string full_event = mm[0].str();
+		event->event_type = EventType::OTHER;
 		num_parse("Other", full_event);
 		return;
 	}
 
+	//X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;=2D=2D=30=36=2D=31=35;=30;=D0=92=D0=B0=D0=B6=D0=BD=D0=B0=D1=8F=20=D0=94=D0=B0=D1=82=D0=B0=23=E2=82=BD;;;;;;;;;;;;=30
 	////////////////////////////////////
 	event_pattern.assign("CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;([^;]*);[^;]*;([^;]*);");
 
 	if (std::regex_search(line, mm, event_pattern)) {
+		event->event_type = EventType::ENCODED;
+		event->set_encoded_state();
 		num_parse(decode(mm[2].str().c_str()),
 			decode(mm[1].str().c_str()));
-		event->set_encoded_state();
 		return;
 	}
 }
@@ -541,41 +560,54 @@ void socials_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 	else if (sns_name == "X-GOOGLE-TALK") {
 		newname = "HANGOUTS";
 	}
-	else if (sns_name == "X-CUSTOM(") {
-		newname = "CUSTOM";
-	}
 	else {
 		newname = sns_name.substr(2);
 	}
+	std::regex socials_pattern;
 
-	std::regex socials_pattern("^X-[^;:]*:(.*)$");
-
-	if (std::regex_search(line, mm, socials_pattern)) {
-		sns->name = newname;
-		sns->contact = mm[1];
-
-		current_card->socials.push_back(*sns);
-		return;
-	}
-
-	////////////////////////////////////
+	//X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0=9E);CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=9A
 	socials_pattern.assign("^X-CUSTOM[^,]*,[^,]*,([^;\\)]*)\\);[^;]*;[^;:]*:(.*)$");
 
 	if (std::regex_search(line, mm, socials_pattern)) {
 		sns->name = decode(mm[1].str().c_str());
 		sns->contact = decode(mm[2].str().c_str());
+		sns->is_custom = true;
+		sns->set_encoded_state();
 
 		current_card->socials.push_back(*sns);
 		return;
 	}
 
-	////////////////////////////////////
+	// X-JABBER;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=90=D0=B4
 	socials_pattern.assign("^X-[^;]*;[^;]*;[^;]*:(.*)$");
 
 	if (std::regex_search(line, mm, socials_pattern)) {
 		sns->name = newname;
 
 		sns->contact = decode(mm[1].str().c_str());
+		sns->set_encoded_state();
+
+		current_card->socials.push_back(*sns);
+		return;
+	}
+
+	//X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,Special Sns):this sns
+	socials_pattern.assign("^X-CUSTOM\\(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,(.*)\\):(.*)$");
+
+	if (std::regex_search(line, mm, socials_pattern)) {
+		sns->name = mm[1];
+		sns->contact = mm[2];
+		sns->is_custom = true;
+		current_card->socials.push_back(*sns);
+		return;
+	}
+
+	//X-WHATSAPP:whazzzzap
+	socials_pattern.assign("^X-[^;:]*:(.*)$");
+
+	if (std::regex_search(line, mm, socials_pattern)) {
+		sns->name = newname;
+		sns->contact = mm[1];
 
 		current_card->socials.push_back(*sns);
 		return;
@@ -640,8 +672,9 @@ void relations_parser(const std::string& line, std::unique_ptr<ContactData>& cur
 		}
 		};
 
+	std::regex relations_pattern;
 	///////////////////////////////////////
-	std::regex relations_pattern("^[^;]*relation;([^;]*);([^;]*);([^;]*);");
+	relations_pattern.assign("^[^;]*relation;([^;]*);([^;]*);([^;]*);");
 
 	if (std::regex_search(line, mm, relations_pattern)) {
 		relate->name = mm[1];
@@ -668,6 +701,7 @@ void relations_parser(const std::string& line, std::unique_ptr<ContactData>& cur
 		}
 		select_type(relate->type_num, type_name);
 		relate->type_name = type_name;
+		relate->set_encoded_state();
 
 		current_card->relations.push_back(*relate);
 		return;

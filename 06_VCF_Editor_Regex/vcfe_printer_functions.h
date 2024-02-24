@@ -18,8 +18,8 @@
  * @param names The 'Names' object containing the name components.
  * @param ss The output file stream where the formatted name will be printed.
  */
+void make_vcf(const std::vector<ContactData>& cards, const char* vcf_name);
 void print_vcf_name(const Names& names, std::ofstream& ss);
-
 void print_vcf_phonetics(const PhoneticName& phonetics, std::ofstream& ss);
 void print_vcf_nickname(const NickName& nickname, std::ofstream& ss);
 void print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss);
@@ -28,5 +28,8 @@ void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& s
 void print_vcf_company(const WorkInfo& work, std::ofstream& ss);
 void print_vcf_url(const std::vector<UrlString>& urls, std::ofstream& ss);
 void print_vcf_note(const NoteString& note, std::ofstream& ss);
+void print_vcf_event(const std::vector<Event>& events, std::ofstream& ss);
+void print_vcf_socials(const std::vector<SocialNet>& socials, std::ofstream& ss);
+void print_vcf_relations(const std::vector<Relation>& relations, std::ofstream& ss);
 
 #endif // VCFE_PRINTER_FUNCTIONS_H
