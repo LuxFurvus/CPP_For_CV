@@ -208,3 +208,39 @@ void print_vcf_company(const WorkInfo& work, std::ofstream& ss) {
 	ss << "\n";
 	return;
 }
+
+//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+
+void print_vcf_url(const std::vector<UrlString>& urls, std::ofstream& ss) {
+	if (urls.empty()) return;
+
+	for (auto& url : urls) {
+		ss << ((url.is_encoded()) ?
+			"URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" : "URL:");
+		ss << url.url_address;
+		ss << "\n";
+	}
+	ss << "\n";
+	return;
+}
+
+//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+
+void print_vcf_note(const NoteString& note, std::ofstream& ss) {
+	if (note.note_text.empty()) return;
+
+	if (note.is_encoded()) {
+		ss << "NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+		ss << utf8_string_to_hex_string(note.note_text.c_str());
+	}
+	else {
+		ss << "NOTE:";
+		ss << note.note_text;
+	}
+
+	ss << "\n\n";
+	return;
+}
+
+//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+

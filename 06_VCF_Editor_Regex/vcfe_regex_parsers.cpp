@@ -406,7 +406,9 @@ void url_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 	std::regex url_pattern("^URL:(.*)$");
 
 	if (std::regex_search(line, mm, url_pattern)) {
-		current_card->urls.push_back(mm[1]);
+		UrlString temp;
+		temp.url_address = mm[1].str();
+		current_card->urls.push_back(temp);
 		return;
 	}
 
@@ -415,7 +417,10 @@ void url_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 	url_pattern.assign("^URL;[^;]*;[^;]*:(.*)$");
 
 	if (std::regex_search(line, mm, url_pattern)) {
-		current_card->urls.push_back(decode(mm[1].str().c_str()));
+		UrlString temp;
+		temp.url_address = mm[1].str();
+		temp.set_encoded_state();
+		current_card->urls.push_back(temp);
 		return;
 	}
 }
@@ -430,7 +435,7 @@ void note_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 	std::regex note_pattern("^NOTE:(.*)$");
 
 	if (std::regex_search(line, mm, note_pattern)) {
-		current_card->note = mm[1];
+		current_card->note.note_text = mm[1];
 		return;
 	}
 
@@ -440,7 +445,8 @@ void note_parser(const std::string& line, std::unique_ptr<ContactData>& current_
 	note_pattern.assign("^NOTE;[^;]*;[^;]*:(.*)$");
 
 	if (std::regex_search(line, mm, note_pattern)) {
-		current_card->note = decode(mm[1].str().c_str());
+		current_card->note.note_text = decode(mm[1].str().c_str());
+		current_card->note.set_encoded_state();
 		return;
 	}
 }
@@ -505,6 +511,7 @@ void events_parser(const std::string& line, std::unique_ptr<ContactData>& curren
 	if (std::regex_search(line, mm, event_pattern)) {
 		num_parse(decode(mm[2].str().c_str()),
 			decode(mm[1].str().c_str()));
+		event->set_encoded_state();
 		return;
 	}
 }

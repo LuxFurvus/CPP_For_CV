@@ -138,6 +138,14 @@ struct WorkInfo : public VcfEntry {
 	}
 };
 
+struct UrlString : public VcfEntry {
+	std::string url_address;
+};
+
+struct NoteString : public VcfEntry {
+	std::string note_text;
+};
+
 struct Relation : public VcfEntry {
 	std::string name;
 	std::string type_name;
@@ -167,8 +175,8 @@ struct ContactData {
 	std::vector<Emails> emails;
 	std::vector<Addresses> addresses;
 	WorkInfo workinfo;
-	std::vector<std::string> urls;
-	std::string note;
+	std::vector<UrlString> urls;
+	NoteString note;
 	std::vector<Event> events;
 	std::vector<SocialNet> socials;
 	std::vector<Relation> relations;

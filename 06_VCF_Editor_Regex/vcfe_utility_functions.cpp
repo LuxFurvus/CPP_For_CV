@@ -103,11 +103,11 @@ void print_cards(const std::vector<ContactData>& cards) {
 		if (!card.urls.empty()) {
 			printf("URLs:\n");
 			for (const auto& url : card.urls) {
-				std::cout << "\t" << url << "\n";
+				std::cout << "\t" << url.url_address << "\n";
 			}
 		}
-		if (!card.note.empty()) {
-			std::cout << "NOTES:\n\t" << card.note << "\n";
+		if (!card.note.note_text.empty()) {
+			std::cout << "NOTES:\n\t" << card.note.note_text << "\n";
 		}
 
 		if (!card.events.empty()) {

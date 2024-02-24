@@ -18,50 +18,35 @@ extern "C" {
 
 /*
 
-URL:www.site.com
-URL:www.place.org
-URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=92=D0=B5=D0=B1=2D=D1=81=D0=B0=D0=B9=D1=82
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;--01-12;1;;;;;;;;;;;;;0
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;2024-01-12;0;SpecDate;;;;;;;;;;;;0
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;--04-12;2;;;;;;;;;;;;;0
 
-NOTE:Write notes here
-NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=97=D0=B0=D0=BC=D0=B5=D1=82=D0=BA=D0=B8=20=D0=B7=D0=B0=D0=BF=D0=B8=
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;--06-01;1;;;;;;;;;;;;;0
+X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;2022-01-01;2;;;;;;;;;;;;;0
+X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;=2D=2D=30=36=2D=31=35;=30;=D0=92=D0=B0=D0=B6=D0=BD=D0=B0=D1=8F=20=D0=94=D0=B0=D1=82=D0=B0=23=E2=
+=82=BD;;;;;;;;;;;;=30
+
+BDAY:2000-01-01
 
 */
 
-void print_vcf_url(const WorkInfo& work, std::ofstream& ss) {
+void print_vcf_event(const std::vector<Event>& events, std::ofstream& ss) {
+	if (events.empty()) return;
 
-	if (work.is_empty()) return;
-
-	if (work.is_encoded()) {
-		ss << "ORG;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
-		if (!work.company.empty()) {
-			ss << utf8_string_to_hex_string(work.company.c_str());
+	for (const auto& event : events) {
+		if (event.is_encoded()) {
+			ss << "X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+			ss << "vnd.android.cursor.item/contact_event;";
+			//ss << utf8_string_to_hex_string(note.note_text.c_str());
 		}
-		ss << "=3B";
-		if (!work.department.empty()) {
-			ss << utf8_string_to_hex_string(work.department.c_str());
+		else {
+			ss << "X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;";
+			ss << (event.year.empty()? "-" : event.year);
+			ss << "-" << event.month << "-" << event.day << event.event_name;
+
 		}
 		ss << "\n";
-		if (!work.title.empty()) {
-			ss << "TITLE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
-			ss << utf8_string_to_hex_string(work.title.c_str());
-			ss << "\n";
-		}
-	}
-	else {
-		ss << "ORG:";
-		if (!work.company.empty()) {
-			ss << work.company;
-		}
-		ss << ";";
-		if (!work.department.empty()) {
-			ss << work.department;
-		}
-		ss << "\n";
-		if (!work.title.empty()) {
-			ss << "TITLE:";
-			ss << work.title;
-			ss << "\n";
-		}
 	}
 	ss << "\n";
 	return;
@@ -88,6 +73,8 @@ void make_vcf(const std::vector<ContactData>& cards, const char* vcf_name) {
 		print_vcf_email(card.emails, vcf_stream);
 		print_vcf_address(card.addresses, vcf_stream);
 		print_vcf_company(card.workinfo, vcf_stream);
+		print_vcf_url(card.urls, vcf_stream);
+		print_vcf_note(card.note, vcf_stream);
 		//////////////////////////
 		vcf_stream << "END:VCARD\n\n";
 	}
