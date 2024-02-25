@@ -1,8 +1,8 @@
 #include <iostream>
 #include "site_parser.h"
 
-int main(int argc, char* argv[]) {
-    // argv[1] = "settings.txt"; // for debug only
+int main([[maybe_unused]]int argc, char* argv[]) {
+    // argv[1] = "settings.txt"; // for debug only !!!
 
     if(argv[1] == nullptr){
         std::cerr << "Provide the settings file name after " << argv[0] << '\n';

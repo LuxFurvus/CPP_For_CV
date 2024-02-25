@@ -7,6 +7,9 @@
 #include <sstream>
 #include <string>
 #include <memory>
+#include <future>
+#include <thread>
+#include <functional>
 
 #include "site_parser.h"
 
@@ -56,67 +59,98 @@ void SiteParser::collect_settings(const char* file_name){
     std::string line;
     while (std::getline(inputFile, line)) {
         // Skip empty lines
-        if (line.empty())
-            continue;
-
+        if (line.empty()) continue;
         // Parse lines based on keywords
         parse_setting_line(line);
     }
 }
 
-bool SiteParser::make_https_request(const char* url) {
+int SiteParser::make_https_request(const std::string& url, int num) {
     
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(("curl -s " + std::string(url)).c_str(), "r"), pclose);
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(("curl -s " + url).c_str(), "r"), pclose);
     
     if (!pipe) {
         std::cerr << "Error opening pipe" << std::endl;
-        return false;
+        return -1;
     }
 
     const size_t bufferSize = 4096;
     std::vector<char> buffer(bufferSize, '\0');
 
-    response.clear();
+    std::string resp;
 
     // Read the response from the curl command
     while (fgets(buffer.data(), bufferSize, pipe.get()) != NULL) {
-        response += buffer.data();
+        resp += buffer.data();
     }
 
-    return true;
+    if (resp.find(search_line) != std::string::npos) {
+        return num;
+    }
+
+    return -1;
+}
+
+std::string SiteParser::make_real_url(std::string input, int number) {
+	std::string number_str = std::to_string(number);
+	size_t pos = input.find("***");
+	if (pos != std::string::npos) {
+		input.replace(pos, 3, number_str);
+	}
+	return input;
 }
 
 void SiteParser::parse_site() {
-    int counter = 0;
-
-    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(max_url_size);
 
     correct_urls.reserve(end_num - start_num);
 
-    const char* url_template_str = url_template.c_str();
+    // Limit the number of concurrent requests to a reasonable number
+    // std::min to avoid over-allocation in case of a small range [start_num, end_num).
+    uint32_t max_concurrent_requests {std::min(
+        static_cast<uint32_t>(end_num - start_num),
+        std::max(1u, std::thread::hardware_concurrency() * 2))};
+
+    std::vector<std::future<int>> futures;
+    futures.reserve(max_concurrent_requests);
+
+    // Local lambda to DRY in for loops below
+    auto collect_futures = [&](std::future<int>& fut)-> bool {
+        if(fut.valid() == false) return true;
+        int result = fut.get();
+        if (result == -1) return true;
+        correct_urls.emplace_back(make_real_url(url_template, result));
+        return false;
+    };
 
     for (int i = start_num; i < end_num; ++i) {
+        std::string url_todo {make_real_url(url_template, i)};
 
-        snprintf(buffer.get(), max_url_size, url_template_str, i);
-        std::cout << "Parsing: [ " << buffer.get() 
-        << " ] Found " << get_correct_urls_num() << " correct urls"
-        << "\r" << std::flush;
+        // Launch asynchronous tasks
+        futures.push_back(std::async(std::launch::async, 
+            &SiteParser::make_https_request, this, url_todo, i));
 
-        make_https_request(buffer.get());
-
-        if (response.find(search_line) == std::string::npos) {
-            correct_urls.emplace_back(buffer.get());
-            ++counter;
+        // If we've reached the maximum number of concurrent tasks, wait for them to complete
+        if (futures.size() >= max_concurrent_requests) {
+            for (auto &fut : futures) {
+                if(collect_futures(fut)) continue;
+            }
+            // Clear completed futures
+            futures.clear();            
         }
 
-        response.clear();
+        // Output progress
+        std::cout 
+        << "Parsing: [ " << url_todo 
+        << " ] Found " << get_correct_urls_num() 
+        << " correct urls" << "\r" << std::flush;
     }
 
-    std::cout << "\r\n" << std::flush;
-    std::cout << "Parsing complete! For parsing results, see " 
-    << output_file << "\n";
-    
-    return;
+    // Wait for any remaining asynchronous tasks to complete
+    for (auto &fut : futures) {
+        if(collect_futures(fut)) continue;
+    }
+
+    std::cout << "\nParsing complete! For parsing results, see " << output_file << "\n";
 }
 
 void SiteParser::print_parse_result(){
@@ -130,8 +164,8 @@ void SiteParser::print_parse_result(){
 
     int counter{0};
 
-	for(const std::string& rr : correct_urls){
-        outFile << rr;
+	for(const std::string& url : correct_urls){
+        outFile << url;
         ++counter;
         (counter % 10 == 0)? (outFile << "\n\n") : (outFile <<"\n");
 	}
