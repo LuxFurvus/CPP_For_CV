@@ -68,17 +68,19 @@ struct PhoneticName : public VcfEntry {
 };
 
 struct NickName : public VcfEntry {
-public: std::string nick;
+	std::string nick;
 };
 
 struct Telephones : public VcfEntry {
 	std::string type;
 	std::string number;
+	bool is_custom{ false };
 };
 
 struct Emails : public VcfEntry {
 	std::string type;
 	std::string address;
+	bool is_custom{ false };
 };
 
 struct Addresses : public VcfEntry {

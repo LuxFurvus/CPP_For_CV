@@ -27,6 +27,23 @@ void print_vcf_name(const Names& names, std::ofstream& ss) {
 		ss << utf8_string_to_hex_string(names.suffix.c_str());
 		ss << '\n';
 	}
+	else {
+		ss << "N:";
+		ss << names.family << ';';
+		ss << names.personal << ';';
+		ss << names.father << ';';
+		ss << names.address_form << ';';
+		ss << names.suffix;
+		ss << '\n';
+
+		ss << "FN:";
+		ss << names.address_form << " ";
+		ss << names.personal << " ";
+		ss << names.father << " ";
+		ss << names.family << ", ";
+		ss << names.suffix;
+		ss << '\n';
+	}
 	ss << '\n';
 	return;
 }
@@ -75,13 +92,17 @@ void print_vcf_nickname(const NickName& nickname, std::ofstream& ss) {
 
 void print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss) {
 	for (auto& tel : tels) {
+		//TEL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0=9E
 		if (tel.is_encoded()) {
 			ss << "TEL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,";
 			ss << utf8_string_to_hex_string(tel.type.c_str());
 			ss << "):";
 		}
+		//TEL;VOICE:77777
+		//TEL;X-CustomisoNum:66666
 		else {
 			ss << "TEL;";
+			if (tel.is_custom) ss << "X-";
 			ss << tel.type << ":";
 		}
 		ss << tel.number.c_str();
@@ -96,14 +117,33 @@ void print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss
 void print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss) {
 	for (auto& em : emails) {
 		if (em.is_encoded()) {
-			ss << "EMAIL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,";
-			ss << utf8_string_to_hex_string(em.type.c_str());
-			ss << ");CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
-			ss << utf8_string_to_hex_string(em.address.c_str());
+
+			//EMAIL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=B4
+			if (em.type.empty()) {
+				ss << "EMAIL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+				ss << utf8_string_to_hex_string(em.address.c_str());
+			}
+			//EMAIL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0=9E);CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=BF
+			else if (em.is_custom) {
+				ss << "EMAIL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,";
+				ss << utf8_string_to_hex_string(em.type.c_str());
+				ss << ");CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+				ss << utf8_string_to_hex_string(em.address.c_str());
+			}
+			//EMAIL;HOME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0=AD
+			else {
+				ss << "EMAIL;";
+				ss << em.type;
+				ss << ";CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
+				ss << utf8_string_to_hex_string(em.address.c_str());
+			}
 		}
+		//EMAIL:email1
+		//EMAIL;WORK:workmail
 		else {
-			ss << "EMAIL;";
-			ss << em.type << ":";
+			ss << "EMAIL";
+			if (em.type.empty()) ss << ":";
+			else ss << ";" << em.type << ":";
 			ss << em.address;
 		}
 		ss << "\n";
@@ -116,11 +156,11 @@ void print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss) {
 
 void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& ss) {
 
-	auto bunch_printer = [&](const Addresses& adr, const char* delim, bool to_encode = true) {
+	auto no_encode = [](const char* entry) -> char* {
+		return const_cast<char*>(entry);
+		};
 
-		auto no_encode = [](const char* entry) -> char* {
-			return const_cast<char*>(entry);
-			};
+	auto regular_printer = [&](const Addresses& adr, const char* delim, bool to_encode = true) {
 
 		char* (*encoder)(const char*);
 		encoder = (to_encode) ? utf8_string_to_hex_string : no_encode;
@@ -129,27 +169,42 @@ void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& s
 		ss << encoder(adr.city.c_str()) << delim;
 		ss << encoder(adr.region.c_str()) << delim;
 		ss << encoder(adr.index.c_str()) << delim;
-		ss << encoder(adr.country.c_str()) << delim;
+		ss << encoder(adr.country.c_str());
+		};
+
+	auto special_printer = [&](const Addresses& adr) {
+
+		ss << utf8_string_to_hex_string(adr.street.c_str()) << "=0A";
+		ss << utf8_string_to_hex_string(adr.city.c_str()) << "=2C=20";
+		ss << utf8_string_to_hex_string(adr.region.c_str()) << "=20";
+		ss << utf8_string_to_hex_string(adr.index.c_str()) << "=0A";
+		ss << utf8_string_to_hex_string(adr.country.c_str());
 		};
 
 	for (auto& adr : addresses) {
 		if (adr.is_encoded()) {
+			//X-SAMSUNGADR;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;=D0=A3
 			ss << "X-SAMSUNGADR;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;";
-			bunch_printer(adr, ";");
-			bunch_printer(adr, "=20");
+			regular_printer(adr, ";");
+			ss << ";";
+			special_printer(adr);
 			ss << "\n";
+			//ADR;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;=D0=A3
 			ss << "ADR;";
+			if (adr.type.empty() == false) ss << adr.type << ";";
 			ss << "CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:;;";
-			bunch_printer(adr, ";");
+			regular_printer(adr, ";");
 		}
 		else {
 			ss << "X-SAMSUNGADR;ENCODING=QUOTED-PRINTABLE:;;";
-			bunch_printer(adr, ";");
-			bunch_printer(adr, "=20");
+			regular_printer(adr, ";");
+			ss << ";";
+			special_printer(adr);
 			ss << "\n";
+			//ADR;WORK:;;Street;City;Region;Index;Country
 			ss << "ADR;";
 			ss << adr.type << ":;;";
-			bunch_printer(adr, ";", false);
+			regular_printer(adr, ";", false);
 		}
 		ss << "\n";
 	}

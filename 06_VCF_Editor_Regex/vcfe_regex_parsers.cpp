@@ -168,6 +168,7 @@ void tel_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 		std::string decoded_typename(mm[1].str());
 		if (decoded_typename[0] == 'X' && decoded_typename[1] == '-') {
 			decoded_typename = decoded_typename.substr(2);
+			new_tel->is_custom = true;
 		}
 
 		new_tel->type = decoded_typename;
@@ -196,6 +197,7 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 		new_email->address = decode(mm[2].str().c_str());
 
 		new_email->set_encoded_state();
+		new_email->is_custom = true;
 
 		current_card->emails.push_back(std::move(*new_email));
 		return;
@@ -225,7 +227,7 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
-		new_email->type = "OTHER";
+		new_email->type = "";
 
 		new_email->address = decode(mm[1].str().c_str());
 
@@ -256,7 +258,7 @@ void email_parser(const std::string& line, std::unique_ptr<ContactData>& current
 	if (std::regex_search(line, mm, email_pattern)) {
 		std::unique_ptr<Emails> new_email(new Emails);
 
-		new_email->type = "OTHER";
+		new_email->type = "";
 		new_email->address = mm[1].str();
 
 		current_card->emails.push_back(std::move(*new_email));
@@ -316,7 +318,7 @@ void address_parser(const std::string& line, std::unique_ptr<ContactData>& curre
 	address_pattern.assign("^ADR;[^;]*;[^;]*:;;([^;]*);([^;]*);([^;]*);([^;]*);([^;]*)$");
 
 	if (std::regex_search(line, mm, address_pattern)) {
-		new_address->type = "OTHER";
+		new_address->type = "";
 
 		std::vector<std::string> scric;
 

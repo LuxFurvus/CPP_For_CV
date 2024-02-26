@@ -34,7 +34,7 @@ void make_vcf(const std::vector<ContactData>& cards, const char* vcf_name) {
 
 	for (const ContactData& card : cards) {
 		vcf_stream << "\nBEGIN:VCARD\n";
-		vcf_stream << "VERSION:" << card.version << "\n";
+		vcf_stream << "VERSION:" << card.version << "\n\n";
 		//////////////////////////
 		print_vcf_name(card.names, vcf_stream);
 		print_vcf_phonetics(card.phonetic_name, vcf_stream);
