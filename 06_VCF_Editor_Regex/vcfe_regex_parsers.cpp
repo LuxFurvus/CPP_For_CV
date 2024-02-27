@@ -416,11 +416,12 @@ void url_parser(const std::string& line, std::unique_ptr<ContactData>& current_c
 
 	////////////////////////////////////
 	//URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=D0
-	url_pattern.assign("^URL;[^;]*;[^;]*:(.*)$");
+	url_pattern.assign("^URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:(.*)$");
+	//"^URL;[^;]*;[^;]*:(.*)$";
 
 	if (std::regex_search(line, mm, url_pattern)) {
 		UrlString temp;
-		temp.url_address = mm[1].str();
+		temp.url_address = decode(mm[1].str().c_str());
 		temp.set_encoded_state();
 		current_card->urls.push_back(temp);
 		return;

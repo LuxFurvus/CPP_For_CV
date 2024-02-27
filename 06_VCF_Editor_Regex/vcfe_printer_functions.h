@@ -18,7 +18,7 @@
  * @param names The 'Names' object containing the name components.
  * @param ss The output file stream where the formatted name will be printed.
  */
-void make_vcf(const std::vector<ContactData>& cards, const char* vcf_name);
+void print_vcf(const std::vector<ContactData>& cards, const char* vcf_name);
 void print_vcf_name(const Names& names, std::ofstream& ss);
 void print_vcf_phonetics(const PhoneticName& phonetics, std::ofstream& ss);
 void print_vcf_nickname(const NickName& nickname, std::ofstream& ss);

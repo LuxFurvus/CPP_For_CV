@@ -36,7 +36,7 @@ void collect_lines(std::vector<std::string>& lines, const std::string& vcf_name)
 
 ///=///=///=///=///=///=///=///=///=///=///=///=///=///=
 
-void print_cards(const std::vector<ContactData>& cards) {
+void show_cards(const std::vector<ContactData>& cards) {
 	for (auto& card : cards) {
 		printf("\n+++NEW CARD+++\n");
 
@@ -76,14 +76,16 @@ void print_cards(const std::vector<ContactData>& cards) {
 		if (!card.emails.empty()) {
 			printf("E-MAILS:\n");
 			for (auto& email : card.emails) {
-				std::cout << '\t' << email.type << ": " << email.address << "\n";
+				std::string email_type{(email.type.empty())? "OTHER" : email.type };
+				std::cout << '\t' << email_type << ": " << email.address << "\n";
 			}
 		}
 
 		if (!card.addresses.empty()) {
 			printf("ADDRESSES:\n");
 			for (const auto& scric : card.addresses) {
-				std::cout << '\t' << scric[0] << ": ";
+				std::string scric_type{ (scric[0].empty()) ? "OTHER" : scric[0] };
+				std::cout << '\t' << scric_type << ": ";
 				for (int i = 1; i < 6; ++i) {
 					std::cout << scric[i] << " ";
 				}

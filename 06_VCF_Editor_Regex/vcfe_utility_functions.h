@@ -37,6 +37,6 @@ void analyse_lines(std::vector<std::string>& lines, std::vector<ContactData>& da
  *
  * @param cards A vector containing ContactData objects representing virtual cards.
  */
-void print_cards(const std::vector<ContactData>& cards);
+void show_cards(const std::vector<ContactData>& cards);
 
 #endif // _VCFE_UTILITY_FUNCTIONS_H_
