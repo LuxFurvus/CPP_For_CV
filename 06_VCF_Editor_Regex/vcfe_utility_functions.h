@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include "vcfe_regex_parsers.h"
+#include "vcfe_vcf_parser.h"
 
 /**
  * @brief Collects lines of text from user input.
@@ -15,7 +15,7 @@
  *
  * @param lines = A vector to store the collected lines of text.
  */
-void collect_lines(std::vector<std::string>& lines, const std::string& vcf_name);
+//void collect_lines(std::vector<std::string>& lines, const std::string& vcf_name);
 
 /**
  * @brief Analyzes lines of text to extract virtual card information and populates a dataset.
@@ -27,7 +27,7 @@ void collect_lines(std::vector<std::string>& lines, const std::string& vcf_name)
  * @param lines A vector of strings containing lines of text to be analyzed.
  * @param dataset A vector to store the extracted ContactData objects.
  */
-void analyse_lines(std::vector<std::string>& lines, std::vector<ContactData>& dataset);
+//void analyse_lines(std::vector<std::string>& lines, std::vector<ContactData>& dataset);
 
 /**
  * @brief Prints the information of virtual cards in the console.
@@ -37,6 +37,5 @@ void analyse_lines(std::vector<std::string>& lines, std::vector<ContactData>& da
  *
  * @param cards A vector containing ContactData objects representing virtual cards.
  */
-void show_cards(const std::vector<ContactData>& cards);
 
 #endif // _VCFE_UTILITY_FUNCTIONS_H_

@@ -139,21 +139,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="json.hpp" />
+    <ClInclude Include="nlohmann.hpp" />
     <ClInclude Include="vcfe_data_containers.h" />
     <ClInclude Include="vcfe_decode_from_hex.h" />
     <ClInclude Include="vcfe_encode_to_hex.h" />
-    <ClInclude Include="vcfe_printer_functions.h" />
-    <ClInclude Include="vcfe_regex_parsers.h" />
-    <ClInclude Include="vcfe_utility_functions.h" />
+    <ClInclude Include="vcfe_vcf_printer.h" />
+    <ClInclude Include="vcfe_vcf_parser.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vcfe_decode_from_hex.c" />
     <ClCompile Include="vcfe_encode_to_hex.c" />
     <ClCompile Include="vcfe_main.cpp" />
-    <ClCompile Include="vcfe_printer_functions.cpp" />
-    <ClCompile Include="vcfe_regex_parsers.cpp" />
-    <ClCompile Include="vcfe_utility_functions.cpp" />
+    <ClCompile Include="vcfe_vcf_printer.cpp" />
+    <ClCompile Include="vcfe_vcf_parser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AAA.vcf" />

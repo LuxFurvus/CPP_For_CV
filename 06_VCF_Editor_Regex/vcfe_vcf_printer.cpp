@@ -1,18 +1,18 @@
 
 #include <string>
 #include <fstream>
+#include <iostream>
 
 extern "C" {
 #include "vcfe_encode_to_hex.h"
 }
-#include "vcfe_regex_parsers.h"
-#include "vcfe_printer_functions.h"
+#include "vcfe_vcf_printer.h"
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_name(const Names& names, std::ofstream& ss) {
+void VcfPrinter::print_vcf_name(const Names& names, std::ofstream& ss) const {
 
-	if (names.is_encoded()) {		
+	if (names.is_encoded()) {
 		ss << "N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
 		ss << utf8_string_to_hex_string(names.family.c_str()) << ';';
 		ss << utf8_string_to_hex_string(names.personal.c_str()) << ';';
@@ -52,7 +52,7 @@ void print_vcf_name(const Names& names, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_phonetics(const PhoneticName& phonetics, std::ofstream& ss) {
+void VcfPrinter::print_vcf_phonetics(const PhoneticName& phonetics, std::ofstream& ss) const {
 
 	if (phonetics.is_encoded()) {
 		ss << "X-PHONETIC-FIRST-NAME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
@@ -76,7 +76,7 @@ void print_vcf_phonetics(const PhoneticName& phonetics, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_nickname(const NickName& nickname, std::ofstream& ss) {
+void VcfPrinter::print_vcf_nickname(const NickName& nickname, std::ofstream& ss) const {
 
 	if (nickname.is_encoded()) {
 		ss << "X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/nickname;";
@@ -92,7 +92,7 @@ void print_vcf_nickname(const NickName& nickname, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss) {
+void VcfPrinter::print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss) const {
 	for (auto& tel : tels) {
 		//TEL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0=9E
 		if (tel.is_encoded()) {
@@ -116,7 +116,7 @@ void print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss) {
+void VcfPrinter::print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss) const {
 	for (auto& em : emails) {
 		if (em.is_encoded()) {
 
@@ -156,7 +156,7 @@ void print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& ss) {
+void VcfPrinter::print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& ss) const {
 
 	auto no_encode = [](const char* entry) -> char* {
 		return const_cast<char*>(entry);
@@ -216,7 +216,7 @@ void print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& s
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_company(const WorkInfo& work, std::ofstream& ss) {
+void VcfPrinter::print_vcf_company(const WorkInfo& work, std::ofstream& ss) const {
 
 	if (work.is_empty()) return;
 
@@ -258,7 +258,7 @@ void print_vcf_company(const WorkInfo& work, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_url(const std::vector<UrlString>& urls, std::ofstream& ss) {
+void VcfPrinter::print_vcf_url(const std::vector<UrlString>& urls, std::ofstream& ss) const {
 	if (urls.empty()) return;
 
 	for (auto& url : urls) {
@@ -273,7 +273,7 @@ void print_vcf_url(const std::vector<UrlString>& urls, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_note(const NoteString& note, std::ofstream& ss) {
+void VcfPrinter::print_vcf_note(const NoteString& note, std::ofstream& ss) const {
 	if (note.note_text.empty()) return;
 
 	if (note.is_encoded()) {
@@ -291,7 +291,7 @@ void print_vcf_note(const NoteString& note, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_event(const std::vector<Event>& events, std::ofstream& ss) {
+void VcfPrinter::print_vcf_event(const std::vector<Event>& events, std::ofstream& ss) const {
 	if (events.empty()) return;
 
 	auto print_date = [&](const Event& ee) {
@@ -359,7 +359,7 @@ void print_vcf_event(const std::vector<Event>& events, std::ofstream& ss) {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_socials(const std::vector<SocialNet>& socials, std::ofstream& ss) {
+void VcfPrinter::print_vcf_socials(const std::vector<SocialNet>& socials, std::ofstream& ss) const {
 	if (socials.empty()) return;
 
 	for (const auto& sn : socials) {
@@ -407,7 +407,7 @@ void print_vcf_socials(const std::vector<SocialNet>& socials, std::ofstream& ss)
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf_relations(const std::vector<Relation>& relations, std::ofstream& ss) {
+void VcfPrinter::print_vcf_relations(const std::vector<Relation>& relations, std::ofstream& ss) const {
 	if (relations.empty()) return;
 
 	for (const auto& rel : relations) {
@@ -438,11 +438,125 @@ void print_vcf_relations(const std::vector<Relation>& relations, std::ofstream& 
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void print_vcf(const std::vector<ContactData>& cards, const char* vcf_name) {
+void VcfPrinter::print_to_console(const std::vector<ContactData>& cards) const {
+	for (auto& card : cards) {
+		printf("\n+++NEW CARD+++\n");
+
+		if (!card.version.empty()) {
+			std::cout << "VERSION: " << card.version << '\n';
+		}
+
+		if (!card.names.is_empty()) {
+			printf("NAME:\n\t");
+			std::cout << card.names.family << ' ';
+			std::cout << card.names.personal << ' ';
+			std::cout << card.names.father << ' ';
+			std::cout << card.names.address_form << ' ';
+			std::cout << card.names.suffix << ' ';
+			printf("\n");
+		}
+
+		if (!card.phonetic_name.is_empty()) {
+			std::cout
+				<< "PHONETIC NAME:\n\t"
+				<< card.phonetic_name.first << " "
+				<< card.phonetic_name.middle << " "
+				<< card.phonetic_name.last << "\n";
+		}
+
+		if (!card.nickname.nick.empty()) {
+			printf("NICKNAME:\n\t");
+			std::cout << card.nickname.nick;
+			printf("\n");
+		}
+
+		if (!card.tels.empty()) {
+			printf("TELEPHONE NUMBERS:\n");
+			for (auto& tel : card.tels) {
+				std::cout << '\t' << tel.type << ": " << tel.number << "\n";
+			}
+		}
+
+		if (!card.emails.empty()) {
+			printf("E-MAILS:\n");
+			for (auto& email : card.emails) {
+				std::string email_type{ (email.type.empty()) ? "OTHER" : email.type };
+				std::cout << '\t' << email_type << ": " << email.address << "\n";
+			}
+		}
+
+		if (!card.addresses.empty()) {
+			printf("ADDRESSES:\n");
+			for (const auto& scric : card.addresses) {
+				std::string scric_type{ (scric.type.empty()) ? "OTHER" : scric.type };
+				std::cout << '\t' << scric_type << ": ";
+				std::cout << scric.street << " ";
+				std::cout << scric.city << " ";
+				std::cout << scric.region << " ";
+				std::cout << scric.index << " ";
+				std::cout << scric.country << " ";
+				printf("\n");
+			}
+		}
+
+		if (!card.workinfo.is_empty()) {
+			printf("ORGANISATION:");
+			std::cout
+				<< "\n\tCompany: " << card.workinfo.company
+				<< "\n\tDepartment: " << card.workinfo.department
+				<< "\n\tTitle: " << card.workinfo.title;
+			printf("\n");
+		}
+
+		if (!card.urls.empty()) {
+			printf("URLs:\n");
+			for (const auto& url : card.urls) {
+				std::cout << "\t" << url.url_address << "\n";
+			}
+		}
+		if (!card.note.note_text.empty()) {
+			std::cout << "NOTES:\n\t" << card.note.note_text << "\n";
+		}
+
+		if (!card.events.empty()) {
+			printf("DATES:\n");
+			for (const auto& event : card.events) {
+				std::cout << "\t" << event.event_name << ": "
+					<< event.day << '-'
+					<< event.month << '-'
+					<< event.year << '\n';
+			}
+		}
+
+		if (!card.socials.empty()) {
+			printf("SOCIAL NETWORKS:\n");
+			for (const auto& sns : card.socials) {
+				std::cout << "\t"
+					<< sns.name << ": "
+					<< sns.contact << '\n';
+			}
+		}
+
+		if (!card.relations.empty()) {
+			printf("RELATIONS:\n");
+			for (const auto& rel : card.relations) {
+				std::cout << "\t"
+					<< rel.type_name << " ("
+					<< rel.type_num << "):\t\t"
+					<< rel.name << '\n';
+			}
+			printf("\n");
+		}
+	}
+}
+
+//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
+
+void VcfPrinter::print_to_file(const std::vector<ContactData>& cards, const std::string& vcf_name) const {
 	std::ofstream vcf_stream;
 	vcf_stream.open(vcf_name, std::ios::trunc);
 	if (!vcf_stream.is_open()) {
-		printf("Cannot create file %s here!\n", vcf_name);
+		printf("Cannot create file %s here!\n", vcf_name.c_str());
 		return;
 	}
 

@@ -8,14 +8,17 @@
 class VcfEntry {
 private: bool encoded{ false };
 
-public: bool is_encoded() const noexcept {
-	return encoded;
-}
-public: void set_encoded_state() {
-	encoded = true;
-}
+public:
+	bool is_encoded() const noexcept {
+		return encoded;
+	}
+	void set_encoded_state() noexcept {
+		encoded = true;
+	}
+	virtual bool is_empty() const = 0;
 };
 
+//class E
 
 struct Names : public VcfEntry {
 	std::string family;
@@ -24,34 +27,12 @@ struct Names : public VcfEntry {
 	std::string address_form;
 	std::string suffix;
 
-	inline bool is_empty() const {
+	inline bool is_empty() const override {
 		return family.empty() &&
 			personal.empty() &&
 			father.empty() &&
 			address_form.empty() &&
 			suffix.empty();
-	}
-
-	inline std::string& operator[](int n) {
-		switch (n) {
-		default:
-		case 0: return family;
-		case 1: return personal;
-		case 2: return father;
-		case 3: return address_form;
-		case 4: return suffix;
-		}
-	}
-
-	inline std::string const& operator[](int n) const {
-		switch (n) {
-		default:
-		case 0: return family;
-		case 1: return personal;
-		case 2: return father;
-		case 3: return address_form;
-		case 4: return suffix;
-		}
 	}
 };
 
@@ -69,18 +50,27 @@ struct PhoneticName : public VcfEntry {
 
 struct NickName : public VcfEntry {
 	std::string nick;
+	inline bool is_empty() const override {
+		return nick.empty();
+	}
 };
 
 struct Telephones : public VcfEntry {
 	std::string type;
 	std::string number;
 	bool is_custom{ false };
+	inline bool is_empty() const override {
+		return number.empty();
+	}
 };
 
 struct Emails : public VcfEntry {
 	std::string type;
 	std::string address;
 	bool is_custom{ false };
+	inline bool is_empty() const override {
+		return address.empty();
+	}
 };
 
 struct Addresses : public VcfEntry {
@@ -90,29 +80,12 @@ struct Addresses : public VcfEntry {
 	std::string region;
 	std::string index;
 	std::string country;
-
-	inline std::string& operator[](int n) {
-		switch (n) {
-		default:
-		case 0: return type;
-		case 1: return street;
-		case 2: return city;
-		case 3: return region;
-		case 4: return index;
-		case 5: return country;
-		}
-	}
-
-	inline std::string const& operator[](int n) const {
-		switch (n) {
-		default:
-		case 0: return type;
-		case 1: return street;
-		case 2: return city;
-		case 3: return region;
-		case 4: return index;
-		case 5: return country;
-		}
+	inline bool is_empty() const override {
+		return street.empty() &&
+			city.empty() &&
+			region.empty() &&
+			index.empty() &&
+			country.empty();
 	}
 };
 
@@ -126,6 +99,10 @@ struct Event : public VcfEntry {
 	std::string month;
 	std::string year;
 	EventType event_type;
+	inline bool is_empty() const override {
+		return day.empty() &&
+			month.empty();
+	}
 };
 
 struct WorkInfo : public VcfEntry {
@@ -142,10 +119,16 @@ struct WorkInfo : public VcfEntry {
 
 struct UrlString : public VcfEntry {
 	std::string url_address;
+	inline bool is_empty() const override {
+		return url_address.empty();
+	}
 };
 
 struct NoteString : public VcfEntry {
 	std::string note_text;
+	inline bool is_empty() const override {
+		return note_text.empty();
+	}
 };
 
 const std::vector<std::string> socials_names{
@@ -165,13 +148,19 @@ const std::vector<std::string> socials_names{
 struct SocialNet : public VcfEntry {
 	std::string name;
 	std::string contact;
-	bool is_custom{false};
+	bool is_custom{ false };
+	inline bool is_empty() const override {
+		return contact.empty();
+	}
 };
 
 struct Relation : public VcfEntry {
 	std::string name;
 	std::string type_name;
 	int type_num;
+	inline bool is_empty() const override {
+		return name.empty() || type_name.empty();
+	}
 };
 
 struct ContactData {
