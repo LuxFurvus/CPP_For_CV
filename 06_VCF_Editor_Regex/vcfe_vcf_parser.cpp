@@ -158,7 +158,7 @@ void VcfParser::name_parser(const std::string& line, std::unique_ptr<ContactData
 	if (std::regex_search(line, mm, pattern1)) {
 		// Extract names from the matched parts
 		for (int i = 1; i < mm.size(); ++i) {
-			if (!mm[i].str().empty()) continue;
+			if (mm[i].str().empty()) continue;
 			// Decode if needed
 			std::string decoded_name = (is_to_decode) ? decode(mm[i].str().c_str()) : mm[i].str();
 
@@ -271,7 +271,7 @@ void VcfParser::tel_parser(const std::string& line, std::unique_ptr<ContactData>
 	);
 
 	if (std::regex_search(line, mm, tel_pattern)) {
-		std::unique_ptr<Telephones> new_tel(new Telephones);
+		std::unique_ptr<TelephoneRecord> new_tel(new TelephoneRecord);
 
 		new_tel->type = decode(mm[1].str().c_str());
 
@@ -279,7 +279,7 @@ void VcfParser::tel_parser(const std::string& line, std::unique_ptr<ContactData>
 
 		new_tel->set_encoded_state();
 
-		current_card->tels.push_back(std::move(*new_tel));
+		current_card->telephones.push_back(std::move(*new_tel));
 		return;
 	}
 	//////////////////////////////////////////
@@ -288,7 +288,7 @@ void VcfParser::tel_parser(const std::string& line, std::unique_ptr<ContactData>
 	tel_pattern.assign("^TEL;([^:]+):(.+)$");
 
 	if (std::regex_search(line, mm, tel_pattern)) {
-		std::unique_ptr<Telephones> new_tel(new Telephones);
+		std::unique_ptr<TelephoneRecord> new_tel(new TelephoneRecord);
 
 		std::string decoded_typename(mm[1].str());
 		if (decoded_typename[0] == 'X' && decoded_typename[1] == '-') {
@@ -299,7 +299,7 @@ void VcfParser::tel_parser(const std::string& line, std::unique_ptr<ContactData>
 		new_tel->type = decoded_typename;
 		new_tel->number = mm[2].str();
 
-		current_card->tels.push_back(std::move(*new_tel));
+		current_card->telephones.push_back(std::move(*new_tel));
 		return;
 	}
 	/////////////////////////////////////
@@ -315,7 +315,7 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 	std::regex email_pattern("^EMAIL;X-CUSTOM\\([^,]*,[^,]*,(.*)\\);[^;]*;[^;]*:(.*)$");
 
 	if (std::regex_search(line, mm, email_pattern)) {
-		std::unique_ptr<Emails> new_email(new Emails);
+		std::unique_ptr<EmailRecord> new_email(new EmailRecord);
 
 		new_email->type = decode(mm[1].str().c_str());
 
@@ -333,7 +333,7 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 	email_pattern.assign("^EMAIL;([^;]*);[^;]*;[^;]*:(.*)$");
 
 	if (std::regex_search(line, mm, email_pattern)) {
-		std::unique_ptr<Emails> new_email(new Emails);
+		std::unique_ptr<EmailRecord> new_email(new EmailRecord);
 
 		new_email->type = mm[1].str();
 
@@ -350,7 +350,7 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 	email_pattern.assign("^EMAIL;[^;]*;[^:]*:(.*)$");
 
 	if (std::regex_search(line, mm, email_pattern)) {
-		std::unique_ptr<Emails> new_email(new Emails);
+		std::unique_ptr<EmailRecord> new_email(new EmailRecord);
 
 		new_email->type = "";
 
@@ -367,7 +367,7 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 	email_pattern.assign("^EMAIL;([^;]+):(.+)$");
 
 	if (std::regex_search(line, mm, email_pattern)) {
-		std::unique_ptr<Emails> new_email(new Emails);
+		std::unique_ptr<EmailRecord> new_email(new EmailRecord);
 
 		new_email->type = mm[1].str();
 		new_email->address = mm[2].str();
@@ -381,7 +381,7 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 	email_pattern.assign("^EMAIL:(.*)$");
 
 	if (std::regex_search(line, mm, email_pattern)) {
-		std::unique_ptr<Emails> new_email(new Emails);
+		std::unique_ptr<EmailRecord> new_email(new EmailRecord);
 
 		new_email->type = "";
 		new_email->address = mm[1].str();
@@ -394,7 +394,7 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 ///=///=///=///=///=///=///=///=///=///=///=///=///=///=
 
 void VcfParser::address_parser(const std::string& line, std::unique_ptr<ContactData>& current_card) {
-	std::unique_ptr<Addresses> new_address(new Addresses);
+	std::unique_ptr<AddressRecord> new_address(new AddressRecord);
 
 	////////////////////////////////////
 	//ADR;WORK:;;Street;City;Region;Index;Country
@@ -532,7 +532,7 @@ void VcfParser::url_parser(const std::string& line, std::unique_ptr<ContactData>
 	std::regex url_pattern("^URL:(.*)$");
 
 	if (std::regex_search(line, mm, url_pattern)) {
-		UrlString temp;
+		UrlRecord temp;
 		temp.url_address = mm[1].str();
 		current_card->urls.push_back(temp);
 		return;
@@ -544,7 +544,7 @@ void VcfParser::url_parser(const std::string& line, std::unique_ptr<ContactData>
 	//"^URL;[^;]*;[^;]*:(.*)$";
 
 	if (std::regex_search(line, mm, url_pattern)) {
-		UrlString temp;
+		UrlRecord temp;
 		temp.url_address = decode(mm[1].str().c_str());
 		temp.set_encoded_state();
 		current_card->urls.push_back(temp);
@@ -582,7 +582,7 @@ void VcfParser::note_parser(const std::string& line, std::unique_ptr<ContactData
 
 void VcfParser::events_parser(const std::string& line, std::unique_ptr<ContactData>& current_card) {
 	std::smatch mm;
-	std::unique_ptr<Event> event(new Event);
+	std::unique_ptr<EventRecord> event(new EventRecord);
 
 	std::regex event_pattern01("(\\d{4})-(\\d{2})-(\\d{2})");
 	std::regex event_pattern02("--(\\d{2})-(\\d{2})");
@@ -622,7 +622,7 @@ void VcfParser::events_parser(const std::string& line, std::unique_ptr<ContactDa
 
 	if (std::regex_search(line, mm, event_pattern)) {
 		std::string full_event = mm[1].str();
-		event->event_type = EventType::SPEC;
+		event->event_type = EventType::SPECIAL;
 		num_parse(mm[2].str(), full_event);
 		return;
 	}
@@ -633,7 +633,7 @@ void VcfParser::events_parser(const std::string& line, std::unique_ptr<ContactDa
 
 	if (std::regex_search(line, mm, event_pattern)) {
 		std::string full_event = mm[0].str();
-		event->event_type = EventType::ANNIV;
+		event->event_type = EventType::ANNIVERSARY;
 		num_parse("Anniversary", full_event);
 		return;
 	}
@@ -678,7 +678,7 @@ bool VcfParser::is_socials_line(const std::string& line, std::string& sns_name) 
 
 void VcfParser::socials_parser(const std::string& line, std::unique_ptr<ContactData>& current_card, const std::string& sns_name) {
 	std::smatch mm;
-	std::unique_ptr<SocialNet> sns(new SocialNet);
+	std::unique_ptr<SocialNetRecord> sns(new SocialNetRecord);
 
 	std::string newname;
 	if (sns_name == "X-SKYPE-USERNAME") {
@@ -745,7 +745,7 @@ void VcfParser::socials_parser(const std::string& line, std::unique_ptr<ContactD
 
 void VcfParser::relations_parser(const std::string& line, std::unique_ptr<ContactData>& current_card) {
 	std::smatch mm;
-	std::unique_ptr<Relation> relate(new Relation);
+	std::unique_ptr<RelationRecord> relate(new RelationRecord);
 
 	std::string type_name;
 

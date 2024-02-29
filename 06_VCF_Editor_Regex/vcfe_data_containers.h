@@ -18,9 +18,7 @@ public:
 	virtual bool is_empty() const = 0;
 };
 
-//class E
-
-struct Names : public VcfEntry {
+struct NameRecord : public VcfEntry {
 	std::string family;
 	std::string personal;
 	std::string father;
@@ -36,7 +34,7 @@ struct Names : public VcfEntry {
 	}
 };
 
-struct PhoneticName : public VcfEntry {
+struct PhoneticRecord : public VcfEntry {
 	std::string first;
 	std::string middle;
 	std::string last;
@@ -48,14 +46,14 @@ struct PhoneticName : public VcfEntry {
 	}
 };
 
-struct NickName : public VcfEntry {
+struct NickNameRecord : public VcfEntry {
 	std::string nick;
 	inline bool is_empty() const override {
 		return nick.empty();
 	}
 };
 
-struct Telephones : public VcfEntry {
+struct TelephoneRecord : public VcfEntry {
 	std::string type;
 	std::string number;
 	bool is_custom{ false };
@@ -64,7 +62,7 @@ struct Telephones : public VcfEntry {
 	}
 };
 
-struct Emails : public VcfEntry {
+struct EmailRecord : public VcfEntry {
 	std::string type;
 	std::string address;
 	bool is_custom{ false };
@@ -73,7 +71,7 @@ struct Emails : public VcfEntry {
 	}
 };
 
-struct Addresses : public VcfEntry {
+struct AddressRecord : public VcfEntry {
 	std::string type;
 	std::string street;
 	std::string city;
@@ -90,10 +88,10 @@ struct Addresses : public VcfEntry {
 };
 
 enum class EventType {
-	SPEC, ANNIV, OTHER, BDAY, ENCODED
+	SPECIAL, ANNIVERSARY, OTHER, BDAY, ENCODED
 };
 
-struct Event : public VcfEntry {
+struct EventRecord : public VcfEntry {
 	std::string event_name;
 	std::string day;
 	std::string month;
@@ -105,7 +103,7 @@ struct Event : public VcfEntry {
 	}
 };
 
-struct WorkInfo : public VcfEntry {
+struct WorkInfoRecord : public VcfEntry {
 	std::string company;
 	std::string department;
 	std::string title;
@@ -117,14 +115,14 @@ struct WorkInfo : public VcfEntry {
 	}
 };
 
-struct UrlString : public VcfEntry {
+struct UrlRecord : public VcfEntry {
 	std::string url_address;
 	inline bool is_empty() const override {
 		return url_address.empty();
 	}
 };
 
-struct NoteString : public VcfEntry {
+struct NoteRecord : public VcfEntry {
 	std::string note_text;
 	inline bool is_empty() const override {
 		return note_text.empty();
@@ -145,7 +143,7 @@ const std::vector<std::string> socials_names{
 	"X-CUSTOM("
 };
 
-struct SocialNet : public VcfEntry {
+struct SocialNetRecord : public VcfEntry {
 	std::string name;
 	std::string contact;
 	bool is_custom{ false };
@@ -154,7 +152,7 @@ struct SocialNet : public VcfEntry {
 	}
 };
 
-struct Relation : public VcfEntry {
+struct RelationRecord : public VcfEntry {
 	std::string name;
 	std::string type_name;
 	int type_num;
@@ -165,18 +163,18 @@ struct Relation : public VcfEntry {
 
 struct ContactData {
 	std::string version;
-	Names names;
-	PhoneticName phonetic_name;
-	NickName nickname;
-	std::vector<Telephones> tels;
-	std::vector<Emails> emails;
-	std::vector<Addresses> addresses;
-	WorkInfo workinfo;
-	std::vector<UrlString> urls;
-	NoteString note;
-	std::vector<Event> events;
-	std::vector<SocialNet> socials;
-	std::vector<Relation> relations;
+	NameRecord names;
+	PhoneticRecord phonetic_name;
+	NickNameRecord nickname;
+	std::vector<TelephoneRecord> telephones;
+	std::vector<EmailRecord> emails;
+	std::vector<AddressRecord> addresses;
+	WorkInfoRecord workinfo;
+	std::vector<UrlRecord> urls;
+	NoteRecord note;
+	std::vector<EventRecord> events;
+	std::vector<SocialNetRecord> socials;
+	std::vector<RelationRecord> relations;
 };
 
 #endif // !VCFE_DATA_CONTAINERS_H

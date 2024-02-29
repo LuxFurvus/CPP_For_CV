@@ -143,12 +143,14 @@
     <ClInclude Include="vcfe_data_containers.h" />
     <ClInclude Include="vcfe_decode_from_hex.h" />
     <ClInclude Include="vcfe_encode_to_hex.h" />
+    <ClInclude Include="vcfe_json_maker.h" />
     <ClInclude Include="vcfe_vcf_printer.h" />
     <ClInclude Include="vcfe_vcf_parser.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vcfe_decode_from_hex.c" />
     <ClCompile Include="vcfe_encode_to_hex.c" />
+    <ClCompile Include="vcfe_json_maker.cpp" />
     <ClCompile Include="vcfe_main.cpp" />
     <ClCompile Include="vcfe_vcf_printer.cpp" />
     <ClCompile Include="vcfe_vcf_parser.cpp" />

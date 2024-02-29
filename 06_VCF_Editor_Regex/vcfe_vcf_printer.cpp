@@ -10,7 +10,7 @@ extern "C" {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_name(const Names& names, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_name(const NameRecord& names, std::ofstream& ss) const {
 
 	if (names.is_encoded()) {
 		ss << "N;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
@@ -52,7 +52,7 @@ void VcfPrinter::print_vcf_name(const Names& names, std::ofstream& ss) const {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_phonetics(const PhoneticName& phonetics, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_phonetics(const PhoneticRecord& phonetics, std::ofstream& ss) const {
 
 	if (phonetics.is_encoded()) {
 		ss << "X-PHONETIC-FIRST-NAME;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:";
@@ -76,7 +76,7 @@ void VcfPrinter::print_vcf_phonetics(const PhoneticName& phonetics, std::ofstrea
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_nickname(const NickName& nickname, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_nickname(const NickNameRecord& nickname, std::ofstream& ss) const {
 
 	if (nickname.is_encoded()) {
 		ss << "X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/nickname;";
@@ -92,8 +92,8 @@ void VcfPrinter::print_vcf_nickname(const NickName& nickname, std::ofstream& ss)
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_telephones(const std::vector<Telephones>& tels, std::ofstream& ss) const {
-	for (auto& tel : tels) {
+void VcfPrinter::print_vcf_telephones(const std::vector<TelephoneRecord>& telephones, std::ofstream& ss) const {
+	for (auto& tel : telephones) {
 		//TEL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,=D0=9E
 		if (tel.is_encoded()) {
 			ss << "TEL;X-CUSTOM(CHARSET=UTF-8,ENCODING=QUOTED-PRINTABLE,";
@@ -116,7 +116,7 @@ void VcfPrinter::print_vcf_telephones(const std::vector<Telephones>& tels, std::
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_email(const std::vector<Emails>& emails, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_email(const std::vector<EmailRecord>& emails, std::ofstream& ss) const {
 	for (auto& em : emails) {
 		if (em.is_encoded()) {
 
@@ -156,13 +156,13 @@ void VcfPrinter::print_vcf_email(const std::vector<Emails>& emails, std::ofstrea
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_address(const std::vector<Addresses>& addresses, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_address(const std::vector<AddressRecord>& addresses, std::ofstream& ss) const {
 
 	auto no_encode = [](const char* entry) -> char* {
 		return const_cast<char*>(entry);
 		};
 
-	auto regular_printer = [&](const Addresses& adr, const char* delim, bool to_encode = true) {
+	auto regular_printer = [&](const AddressRecord& adr, const char* delim, bool to_encode = true) {
 
 		char* (*encoder)(const char*);
 		encoder = (to_encode) ? utf8_string_to_hex_string : no_encode;
@@ -174,7 +174,7 @@ void VcfPrinter::print_vcf_address(const std::vector<Addresses>& addresses, std:
 		ss << encoder(adr.country.c_str());
 		};
 
-	auto special_printer = [&](const Addresses& adr) {
+	auto special_printer = [&](const AddressRecord& adr) {
 
 		ss << utf8_string_to_hex_string(adr.street.c_str()) << "=0A";
 		ss << utf8_string_to_hex_string(adr.city.c_str()) << "=2C=20";
@@ -216,7 +216,7 @@ void VcfPrinter::print_vcf_address(const std::vector<Addresses>& addresses, std:
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_company(const WorkInfo& work, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_company(const WorkInfoRecord& work, std::ofstream& ss) const {
 
 	if (work.is_empty()) return;
 
@@ -258,7 +258,7 @@ void VcfPrinter::print_vcf_company(const WorkInfo& work, std::ofstream& ss) cons
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_url(const std::vector<UrlString>& urls, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_url(const std::vector<UrlRecord>& urls, std::ofstream& ss) const {
 	if (urls.empty()) return;
 
 	for (auto& url : urls) {
@@ -273,7 +273,7 @@ void VcfPrinter::print_vcf_url(const std::vector<UrlString>& urls, std::ofstream
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_note(const NoteString& note, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_note(const NoteRecord& note, std::ofstream& ss) const {
 	if (note.note_text.empty()) return;
 
 	if (note.is_encoded()) {
@@ -291,10 +291,10 @@ void VcfPrinter::print_vcf_note(const NoteString& note, std::ofstream& ss) const
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_event(const std::vector<Event>& events, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_event(const std::vector<EventRecord>& events, std::ofstream& ss) const {
 	if (events.empty()) return;
 
-	auto print_date = [&](const Event& ee) {
+	auto print_date = [&](const EventRecord& ee) {
 		ss << (ee.year.empty() ? "-" : ee.year) << "-";
 		ss << ee.month << "-";
 		ss << ee.day;
@@ -305,7 +305,7 @@ void VcfPrinter::print_vcf_event(const std::vector<Event>& events, std::ofstream
 		switch (event.event_type) {
 
 			// X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;2024-01-12;0;SpecDate;;;;;;;;;;;;0
-		case EventType::SPEC:
+		case EventType::SPECIAL:
 			ss << "X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;";
 			print_date(event);
 			ss << ";0;";
@@ -314,7 +314,7 @@ void VcfPrinter::print_vcf_event(const std::vector<Event>& events, std::ofstream
 			break;
 			// X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;--01-12;1;;;;;;;;;;;;;0
 			// X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;--06-01;1;;;;;;;;;;;;;0
-		case EventType::ANNIV:
+		case EventType::ANNIVERSARY:
 			ss << "X-ANDROID-CUSTOM:vnd.android.cursor.item/contact_event;";
 			print_date(event);
 			ss << ";1;";
@@ -359,7 +359,7 @@ void VcfPrinter::print_vcf_event(const std::vector<Event>& events, std::ofstream
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_socials(const std::vector<SocialNet>& socials, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_socials(const std::vector<SocialNetRecord>& socials, std::ofstream& ss) const {
 	if (socials.empty()) return;
 
 	for (const auto& sn : socials) {
@@ -407,7 +407,7 @@ void VcfPrinter::print_vcf_socials(const std::vector<SocialNet>& socials, std::o
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_vcf_relations(const std::vector<Relation>& relations, std::ofstream& ss) const {
+void VcfPrinter::print_vcf_relations(const std::vector<RelationRecord>& relations, std::ofstream& ss) const {
 	if (relations.empty()) return;
 
 	for (const auto& rel : relations) {
@@ -470,9 +470,9 @@ void VcfPrinter::print_to_console(const std::vector<ContactData>& cards) const {
 			printf("\n");
 		}
 
-		if (!card.tels.empty()) {
+		if (!card.telephones.empty()) {
 			printf("TELEPHONE NUMBERS:\n");
-			for (auto& tel : card.tels) {
+			for (auto& tel : card.telephones) {
 				std::cout << '\t' << tel.type << ": " << tel.number << "\n";
 			}
 		}
@@ -567,7 +567,7 @@ void VcfPrinter::print_to_file(const std::vector<ContactData>& cards, const std:
 		print_vcf_name(card.names, vcf_stream);
 		print_vcf_phonetics(card.phonetic_name, vcf_stream);
 		print_vcf_nickname(card.nickname, vcf_stream);
-		print_vcf_telephones(card.tels, vcf_stream);
+		print_vcf_telephones(card.telephones, vcf_stream);
 		print_vcf_email(card.emails, vcf_stream);
 		print_vcf_address(card.addresses, vcf_stream);
 		print_vcf_company(card.workinfo, vcf_stream);
