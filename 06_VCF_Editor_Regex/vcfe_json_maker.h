@@ -2,7 +2,9 @@
 #ifndef VCFE_JSON_MAKER_H
 #define VCFE_JSON_MAKER_H
 
+#include <iostream>
 #include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include "vcfe_data_containers.h"
 
 class JsonMakerBoost {
@@ -22,10 +24,21 @@ private:
 	void json_social_net_boost(const SocialNetRecord& social_net, boost::property_tree::ptree& pt);
 	void json_relation_boost(const RelationRecord& relation_record, boost::property_tree::ptree& pt);
 public:
-	void make_json(const std::vector<ContactData>& cards);
-	inline const boost::property_tree::ptree& get_ptree() const {
+
+	inline void print_json_to_file(const std::string& filename) const noexcept {
+		std::ofstream output_file(filename);
+		if (!output_file.is_open()) return;
+		boost::property_tree::write_json(output_file, card_tree, true);
+		output_file.close();
+	}
+	inline void print_json_to_console() const noexcept {
+		boost::property_tree::write_json(std::cout, card_tree, true);
+	}
+	inline const boost::property_tree::ptree& get_ptree() const noexcept {
 		return card_tree;
 	}
+
+	void make_json(const std::vector<ContactData>& cards);
 };
 
 

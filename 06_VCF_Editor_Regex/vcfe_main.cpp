@@ -16,6 +16,11 @@
 ////////////////
 // 
 
+//enum class PrintDestination {
+//	CONSOLE, FILE
+//};
+
+
 
 int main() {
 	system("chcp 65001 >NUL");
@@ -32,8 +37,8 @@ int main() {
 
 	JsonMakerBoost jmb;
 	jmb.make_json(cards);
-	std::cout << "Serialized using Boost Property Tree:\n";
-	boost::property_tree::write_json(std::cout, jmb.get_ptree(), true);
+	jmb.print_json_to_console();
+	jmb.print_json_to_file("output.json");
 
 	return 0;
 }
