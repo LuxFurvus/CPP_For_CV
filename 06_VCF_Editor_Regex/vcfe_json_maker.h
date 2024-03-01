@@ -42,6 +42,4 @@ public:
 };
 
 
-
-
 #endif // VCFE_JSON_MAKER_H

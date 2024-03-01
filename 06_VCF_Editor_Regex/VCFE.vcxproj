@@ -146,6 +146,7 @@
     <ClInclude Include="vcfe_json_maker.h" />
     <ClInclude Include="vcfe_vcf_printer.h" />
     <ClInclude Include="vcfe_vcf_parser.h" />
+    <ClInclude Include="vcfe_xml_maker.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vcfe_decode_from_hex.c" />
@@ -154,6 +155,7 @@
     <ClCompile Include="vcfe_main.cpp" />
     <ClCompile Include="vcfe_vcf_printer.cpp" />
     <ClCompile Include="vcfe_vcf_parser.cpp" />
+    <ClCompile Include="vcfe_xml_maker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AAA.vcf" />

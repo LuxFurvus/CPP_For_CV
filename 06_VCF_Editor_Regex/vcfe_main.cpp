@@ -3,13 +3,12 @@
 
 #include <iostream>
 #include <string>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 
 #include "vcfe_data_containers.h"
 #include "vcfe_vcf_parser.h"
 #include "vcfe_vcf_printer.h"
 #include "vcfe_json_maker.h"
+#include "vcfe_xml_maker.h"
 
 /*
 */
@@ -35,10 +34,16 @@ int main() {
 	//vcf_printer.print_to_console(cards);
 	//vcf_printer.print_to_file(cards, output_file);
 
-	JsonMakerBoost jmb;
-	jmb.make_json(cards);
-	jmb.print_json_to_console();
-	jmb.print_json_to_file("output.json");
+	//JsonMakerBoost jmb;
+	//jmb.make_json(cards);
+	//jmb.print_json_to_console();
+	//jmb.print_json_to_file("output.json");
+
+	XmlMakerBoost xmb;
+	xmb.make_xml(cards);
+	xmb.print_xml_to_console();
+	xmb.print_xml_to_file("output.xml");
+
 
 	return 0;
 }
