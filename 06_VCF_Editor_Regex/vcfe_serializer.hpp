@@ -2,20 +2,18 @@
 #ifndef VCFE_SERIALIZER_H
 #define VCFE_SERIALIZER_H
 
-#include <iomanip>
-#include <iostream>
 #include <string>
 #include <vector>
-#include "vcfe_data_containers.h"
+#include <iomanip>
+#include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+#include "vcfe_data_containers.hpp"
 
-class IBaseSerializer {
+class ICardPrinter {
 public:
-	virtual ~IBaseSerializer() = default;
-
-	using Cards = std::vector<ContactData>;
+	virtual ~ICardPrinter() = default;
 
 	virtual void print_to_file(const std::string& filename) const noexcept = 0;
 	virtual void print_to_console() const noexcept = 0;
@@ -63,6 +61,37 @@ public:
 	void deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards);
 };
 
+
+class JsonMakerBoost : public ICardPrinter, public PropertyTreeSerializer {
+public:
+
+	inline void print_to_file(const std::string& filename) const noexcept override {
+		std::ofstream output_file(filename);
+		if (!output_file.is_open()) return;
+		boost::property_tree::write_json(output_file, card_tree, true);
+		output_file.close();
+	}
+	inline void print_to_console() const noexcept override {
+		boost::property_tree::write_json(std::cout, card_tree, true);
+	}
+
+};
+
+class XmlMakerBoost : public ICardPrinter, public PropertyTreeSerializer {
+public:
+
+	inline void print_to_file(const std::string& filename) const noexcept override {
+		std::ofstream output_file(filename);
+		if (!output_file.is_open()) return;
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 2);
+		boost::property_tree::write_xml(output_file, card_tree, settings);
+		output_file.close();
+	}
+	inline void print_to_console() const noexcept override {
+		boost::property_tree::xml_writer_settings<std::string> settings(' ', 2);
+		boost::property_tree::write_xml(std::cout, card_tree, settings);
+	}
+};
 
 
 #endif // VCFE_SERIALIZER_H

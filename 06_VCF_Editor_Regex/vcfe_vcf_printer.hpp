@@ -3,7 +3,7 @@
 #define VCFE_VCF_PRINTER_H
 
 #include <fstream>
-#include "vcfe_data_containers.h"
+#include "vcfe_data_containers.hpp"
 
 class VcfPrinter {
 private:

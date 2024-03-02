@@ -4,7 +4,7 @@
 
 #include <string>
 #include <memory>
-#include "vcfe_data_containers.h"
+#include "vcfe_data_containers.hpp"
 
 class VcfParser {
 private:

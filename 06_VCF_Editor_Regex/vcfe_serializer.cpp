@@ -221,116 +221,134 @@ void PropertyTreeSerializer::serialize_relation(const RelationRecord& relation, 
 
 
 void PropertyTreeSerializer::deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards) {
-	// Determine file extension
-	std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
+	try {
+		// Determine file extension
+		std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
 
-	// Create an empty property tree
-	boost::property_tree::ptree pt;
+		// Create an empty property tree
+		boost::property_tree::ptree pt;
 
-	// Load the file into the property tree based on the file extension
-	if (file_extension == "json") {
-		boost::property_tree::read_json(filename, pt);
+		// Load the file into the property tree based on the file extension
+		if (file_extension == "json") {
+			boost::property_tree::read_json(filename, pt);
+		}
+		else if (file_extension == "xml") {
+			boost::property_tree::read_xml(filename, pt);
+		}
+		else {
+			// Unsupported file type, handle appropriately
+			throw std::invalid_argument("Unsupported file type");
+		}
+
+		for (const auto& card_node : pt.get_child("cards")) {
+			ContactData card;
+
+			// Deserialize names
+			if (auto names_node = card_node.second.get_child_optional("Name")) {
+				deserialize_names(names_node.get(), card.names);
+			}
+
+			// Deserialize phonetic names
+			if (auto phonetic_names_node = card_node.second.get_child_optional("PhoneticName")) {
+				deserialize_phonetic(phonetic_names_node.get(), card.phonetic_name);
+			}
+
+			// Deserialize nicknames
+			if (auto nickname_node = card_node.second.get_child_optional("NickName")) {
+				deserialize_nick_name(nickname_node.get(), card.nickname);
+			}
+
+			// Deserialize work info
+			if (auto work_info_node = card_node.second.get_child_optional("WorkInfo")) {
+				deserialize_work_info(work_info_node.get(), card.workinfo);
+			}
+
+			// Deserialize notes
+			if (auto note_node = card_node.second.get_child_optional("Note")) {
+				deserialize_note(note_node.get(), card.note);
+			}
+
+			// Deserialize telephones
+			if (auto telephones_node = card_node.second.get_child_optional("telephones")) {
+				for (const auto& telephone_node : telephones_node.get()) {
+					TelephoneRecord telephone;
+					deserialize_telephone(telephone_node.second, telephone);
+					card.telephones.push_back(telephone);
+				}
+			}
+
+			// Deserialize emails
+			if (auto emails_node = card_node.second.get_child_optional("emails")) {
+				for (const auto& email_node : emails_node.get()) {
+					EmailRecord email;
+					deserialize_email(email_node.second, email);
+					card.emails.push_back(email);
+				}
+			}
+
+			// Deserialize addresses
+			if (auto addresses_node = card_node.second.get_child_optional("addresses")) {
+				for (const auto& address_node : addresses_node.get()) {
+					AddressRecord address;
+					deserialize_address(address_node.second, address);
+					card.addresses.push_back(address);
+				}
+			}
+
+			// Deserialize URLs
+			if (auto urls_node = card_node.second.get_child_optional("urls")) {
+				for (const auto& url_node : urls_node.get()) {
+					UrlRecord url;
+					deserialize_url(url_node.second, url);
+					card.urls.push_back(url);
+				}
+			}
+
+			// Deserialize events
+			if (auto events_node = card_node.second.get_child_optional("events")) {
+				for (const auto& event_node : events_node.get()) {
+					EventRecord event;
+					deserialize_event(event_node.second, event);
+					card.events.push_back(event);
+				}
+			}
+
+			// Deserialize social networks
+			if (auto social_nets_node = card_node.second.get_child_optional("social_nets")) {
+				for (const auto& social_net_node : social_nets_node.get()) {
+					SocialNetRecord social_net;
+					deserialize_social_net(social_net_node.second, social_net);
+					card.socials.push_back(social_net);
+				}
+			}
+
+			// Deserialize relations
+			if (auto relations_node = card_node.second.get_child_optional("relations")) {
+				for (const auto& relation_node : relations_node.get()) {
+					RelationRecord relation;
+					deserialize_relation(relation_node.second, relation);
+					card.relations.push_back(relation);
+				}
+			}
+
+			cards.push_back(card);
+		}
 	}
-	else if (file_extension == "xml") {
-		boost::property_tree::read_xml(filename, pt);
+	catch (const boost::property_tree::json_parser_error& e) {
+		std::cerr << "JSON parser error: " << e.what() << std::endl;
+		std::cerr << "Line: " << e.line() << std::endl;
+		std::cerr << "Filename: " << e.filename() << std::endl;
 	}
-	else {
-		// Unsupported file type, handle appropriately
-		throw std::invalid_argument("Unsupported file type");
+	catch (const boost::property_tree::xml_parser_error& e) {
+		std::cerr << "XML parser error: " << e.what() << std::endl;
+		std::cerr << "Line: " << e.line() << std::endl;
+		std::cerr << "Filename: " << e.filename() << std::endl;
 	}
-
-	for (const auto& card_node : pt.get_child("cards")) {
-		ContactData card;
-
-		// Deserialize names
-		if (auto names_node = card_node.second.get_child_optional("Name")) {
-			deserialize_names(names_node.get(), card.names);
-		}
-
-		// Deserialize phonetic names
-		if (auto phonetic_names_node = card_node.second.get_child_optional("PhoneticName")) {
-			deserialize_phonetic(phonetic_names_node.get(), card.phonetic_name);
-		}
-
-		// Deserialize nicknames
-		if (auto nickname_node = card_node.second.get_child_optional("NickName")) {
-			deserialize_nick_name(nickname_node.get(), card.nickname);
-		}
-
-		// Deserialize work info
-		if (auto work_info_node = card_node.second.get_child_optional("WorkInfo")) {
-			deserialize_work_info(work_info_node.get(), card.workinfo);
-		}
-
-		// Deserialize notes
-		if (auto note_node = card_node.second.get_child_optional("Note")) {
-			deserialize_note(note_node.get(), card.note);
-		}
-
-		// Deserialize telephones
-		if (auto telephones_node = card_node.second.get_child_optional("telephones")) {
-			for (const auto& telephone_node : telephones_node.get()) {
-				TelephoneRecord telephone;
-				deserialize_telephone(telephone_node.second, telephone);
-				card.telephones.push_back(telephone);
-			}
-		}
-
-		// Deserialize emails
-		if (auto emails_node = card_node.second.get_child_optional("emails")) {
-			for (const auto& email_node : emails_node.get()) {
-				EmailRecord email;
-				deserialize_email(email_node.second, email);
-				card.emails.push_back(email);
-			}
-		}
-
-		// Deserialize addresses
-		if (auto addresses_node = card_node.second.get_child_optional("addresses")) {
-			for (const auto& address_node : addresses_node.get()) {
-				AddressRecord address;
-				deserialize_address(address_node.second, address);
-				card.addresses.push_back(address);
-			}
-		}
-
-		// Deserialize URLs
-		if (auto urls_node = card_node.second.get_child_optional("urls")) {
-			for (const auto& url_node : urls_node.get()) {
-				UrlRecord url;
-				deserialize_url(url_node.second, url);
-				card.urls.push_back(url);
-			}
-		}
-
-		// Deserialize events
-		if (auto events_node = card_node.second.get_child_optional("events")) {
-			for (const auto& event_node : events_node.get()) {
-				EventRecord event;
-				deserialize_event(event_node.second, event);
-				card.events.push_back(event);
-			}
-		}
-
-		// Deserialize social networks
-		if (auto social_nets_node = card_node.second.get_child_optional("social_nets")) {
-			for (const auto& social_net_node : social_nets_node.get()) {
-				SocialNetRecord social_net;
-				deserialize_social_net(social_net_node.second, social_net);
-				card.socials.push_back(social_net);
-			}
-		}
-
-		// Deserialize relations
-		if (auto relations_node = card_node.second.get_child_optional("relations")) {
-			for (const auto& relation_node : relations_node.get()) {
-				RelationRecord relation;
-				deserialize_relation(relation_node.second, relation);
-				card.relations.push_back(relation);
-			}
-		}
-
-		cards.push_back(card);
+	catch (const std::invalid_argument& e) {
+		std::cerr << "Invalid argument: " << e.what() << std::endl;
+	}
+	catch (const std::exception& e) {
+		std::cerr << "An error occurred: " << e.what() << std::endl;
 	}
 }
 
@@ -484,8 +502,6 @@ void PropertyTreeSerializer::deserialize_relation(const boost::property_tree::pt
 	relation.type_name = node.get<std::string>("type_name", "");
 	relation.type_num = node.get<int>("type_num", 0);
 }
-
-
 
 #ifdef DDDD
 

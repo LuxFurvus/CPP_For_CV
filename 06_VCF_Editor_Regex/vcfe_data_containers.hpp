@@ -6,10 +6,10 @@
 #include <vector>
 
 class VcfEntry {
-private: 
-
-public:
+private:
 	bool encoded{ false };
+public:
+	~VcfEntry() = default;
 	bool is_encoded() const noexcept {
 		return encoded;
 	}

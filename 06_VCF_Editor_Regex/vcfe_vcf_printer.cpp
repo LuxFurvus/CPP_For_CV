@@ -6,7 +6,7 @@
 extern "C" {
 #include "vcfe_encode_to_hex.h"
 }
-#include "vcfe_vcf_printer.h"
+#include "vcfe_vcf_printer.hpp"
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
@@ -349,6 +349,7 @@ void VcfPrinter::print_vcf_event(const std::vector<EventRecord>& events, std::of
 			ss << utf8_string_to_hex_string(event.event_name.c_str());
 			ss << ";;;;;;;;;;;;=30";
 			break;
+		case EventType::NONE:
 		default: break;
 		}
 		ss << "\n";

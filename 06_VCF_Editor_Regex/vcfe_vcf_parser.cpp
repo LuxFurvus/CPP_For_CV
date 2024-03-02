@@ -7,7 +7,7 @@
 extern "C" {
 #include "vcfe_decode_from_hex.h"
 }
-#include "vcfe_vcf_parser.h"
+#include "vcfe_vcf_parser.hpp"
 
 ///=///=///=///=///=///=///=///=///=///=///=///=///=///=
 
@@ -157,7 +157,7 @@ void VcfParser::name_parser(const std::string& line, std::unique_ptr<ContactData
 
 	if (std::regex_search(line, mm, pattern1)) {
 		// Extract names from the matched parts
-		for (int i = 1; i < mm.size(); ++i) {
+		for (uint32_t i = 1; i < mm.size(); ++i) {
 			if (mm[i].str().empty()) continue;
 			// Decode if needed
 			std::string decoded_name = (is_to_decode) ? decode(mm[i].str().c_str()) : mm[i].str();
