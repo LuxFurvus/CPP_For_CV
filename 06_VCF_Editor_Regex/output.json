@@ -9,6 +9,26 @@
                 "address_form": "ФормаForm",
                 "suffix": "СуффиксSuff"
             },
+            "PhoneticName": {
+                "encoded": "true",
+                "first": "ИмяФонетическое",
+                "middle": "ОтчествоФонетическое",
+                "last": "ФамилияФонетическая"
+            },
+            "NickNameRecord": {
+                "encoded": "true",
+                "nick": "ПсевдонимNickname ￦ 😊"
+            },
+            "WorkInfo": {
+                "encoded": "true",
+                "company": "Компания",
+                "department": "Отдел",
+                "title": "Должность"
+            },
+            "Note": {
+                "encoded": "true",
+                "note_text": "Заметки записывать сюда"
+            },
             "telephones": {
                 "Telephone": {
                     "encoded": "false",
@@ -21,6 +41,573 @@
                     "type": "HOME",
                     "number": "+13334445555",
                     "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "WORK",
+                    "number": "890066699900",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "VOICE",
+                    "number": "502233366699",
+                    "is_custom": "false"
+                }
+            },
+            "emails": {
+                "Email": {
+                    "encoded": "false",
+                    "type": "",
+                    "address": "email1",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "false",
+                    "type": "WORK",
+                    "address": "workmail",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "false",
+                    "type": "HOME",
+                    "address": "email@mail.com",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "false",
+                    "type": "",
+                    "address": "email2@mail.com",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "false",
+                    "type": "X-Superspec",
+                    "address": "specmail.edu",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "true",
+                    "type": "WORK",
+                    "address": "электронная почта",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "true",
+                    "type": "HOME",
+                    "address": "Электронная Почка",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "true",
+                    "type": "",
+                    "address": "другая почта",
+                    "is_custom": "false"
+                },
+                "Email": {
+                    "encoded": "true",
+                    "type": "ОсобПочта",
+                    "address": "почта особы",
+                    "is_custom": "true"
+                }
+            },
+            "addresses": {
+                "Address": {
+                    "encoded": "true",
+                    "type": "HOME",
+                    "street": "Улица",
+                    "city": "Город",
+                    "region": "Область",
+                    "index": "Индекс",
+                    "country": "Страна"
+                },
+                "Address": {
+                    "encoded": "false",
+                    "type": "WORK",
+                    "street": "Street",
+                    "city": "City",
+                    "region": "Region",
+                    "index": "Index",
+                    "country": "Country"
+                },
+                "Address": {
+                    "encoded": "true",
+                    "type": "",
+                    "street": "Улица",
+                    "city": "Город",
+                    "region": "Область",
+                    "index": "Индекс ",
+                    "country": "Страна "
+                }
+            },
+            "events": {
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "Anniversary",
+                    "day": "01",
+                    "month": "06",
+                    "year": "",
+                    "event_type": "ANNIVERSARY"
+                },
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "Other",
+                    "day": "01",
+                    "month": "01",
+                    "year": "2022",
+                    "event_type": "OTHER"
+                },
+                "Event": {
+                    "encoded": "true",
+                    "event_name": "Важная Дата#₽",
+                    "day": "15",
+                    "month": "06",
+                    "year": "",
+                    "event_type": "NONE"
+                },
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "Birthday",
+                    "day": "01",
+                    "month": "01",
+                    "year": "2000",
+                    "event_type": "BDAY"
+                }
+            },
+            "urls": {
+                "Url": {
+                    "encoded": "false",
+                    "url_address": "www.site.com"
+                },
+                "Url": {
+                    "encoded": "false",
+                    "url_address": "www.place.org"
+                },
+                "Url": {
+                    "encoded": "true",
+                    "url_address": "Веб-сайт"
+                },
+                "Url": {
+                    "encoded": "false",
+                    "url_address": "mystery.gu"
+                }
+            },
+            "social_net": {
+                "Social": {
+                    "encoded": "true",
+                    "name": "WHATSAPP",
+                    "contact": "Адрес в ватсапе",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "FACEBOOK",
+                    "contact": "Адрес в фейсбуке",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "HANGOUTS",
+                    "contact": "Адрес в Hangouts",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "QQ",
+                    "contact": "Адрес в QQ",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "SKYPE",
+                    "contact": "Адрес в Skype",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "YAHOO",
+                    "contact": "Адрес в Yahoo",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "AIM",
+                    "contact": "Адрес в AIM",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "ICQ",
+                    "contact": "Адрес в ICQ",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "JABBER",
+                    "contact": "Адрес в Jabber",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "MSN",
+                    "contact": "Адрес в Windows Live",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "true",
+                    "name": "Особый Контакт",
+                    "contact": "Контактик",
+                    "is_custom": "true"
+                }
+            },
+            "relations": {
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Рома Присекин",
+                    "type_name": "Close Relative",
+                    "type_num": "9"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Мать",
+                    "type_name": "Mother",
+                    "type_num": "8"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Отец",
+                    "type_name": "Father",
+                    "type_num": "5"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Брат",
+                    "type_name": "Brother",
+                    "type_num": "2"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Сестра",
+                    "type_name": "Sister",
+                    "type_num": "13"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Супруг",
+                    "type_name": "Spouse",
+                    "type_num": "14"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Ребенок",
+                    "type_name": "Child",
+                    "type_num": "3"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Друг",
+                    "type_name": "Friend",
+                    "type_num": "6"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Особый Тип",
+                    "type_name": "SpecialPerson",
+                    "type_num": "0"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Партнер",
+                    "type_name": "Partner",
+                    "type_num": "4"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Деловой Партнёр",
+                    "type_name": "Work Partner",
+                    "type_num": "10"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Начальник",
+                    "type_name": "Boss",
+                    "type_num": "7"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Помощник",
+                    "type_name": "Assistant",
+                    "type_num": "1"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "СпецТип",
+                    "type_name": "СпецТип",
+                    "type_num": "0"
+                },
+                "Relation": {
+                    "encoded": "true",
+                    "name": "Рекомендация",
+                    "type_name": "Recommendation",
+                    "type_num": "11"
+                }
+            }
+        },
+        "Card": {
+            "Name": {
+                "encoded": "false",
+                "family": "FamilyName",
+                "personal": "PersonalName",
+                "father": "FatherName",
+                "address_form": "AppealForm",
+                "suffix": "NameSuffix"
+            },
+            "PhoneticName": {
+                "encoded": "false",
+                "first": "PhoneName",
+                "middle": "PhoneMiddle",
+                "last": "PhoneLast"
+            },
+            "NickNameRecord": {
+                "encoded": "false",
+                "nick": "SuperSecretName"
+            },
+            "WorkInfo": {
+                "encoded": "false",
+                "company": "Company",
+                "department": "Department",
+                "title": "Position"
+            },
+            "Note": {
+                "encoded": "false",
+                "note_text": "Write notes here"
+            },
+            "telephones": {
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "CELL",
+                    "number": "1111111111",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "HOME",
+                    "number": "+89604827541",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "WORK",
+                    "number": "123580",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "WORK;FAX",
+                    "number": "999999",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "HOME;FAX",
+                    "number": "1111",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "PAGER",
+                    "number": "555555",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "CALLBACK",
+                    "number": "00000#*N(\/p).",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "VOICE",
+                    "number": "77777",
+                    "is_custom": "false"
+                },
+                "Telephone": {
+                    "encoded": "false",
+                    "type": "CustomisoNum",
+                    "number": "66666",
+                    "is_custom": "true"
+                },
+                "Telephone": {
+                    "encoded": "true",
+                    "type": "Особый Номер",
+                    "number": "33333",
+                    "is_custom": "false"
+                }
+            },
+            "addresses": {
+                "Address": {
+                    "encoded": "false",
+                    "type": "HOME",
+                    "street": "Street",
+                    "city": "Town",
+                    "region": "Region",
+                    "index": "Index",
+                    "country": "Country"
+                },
+                "Address": {
+                    "encoded": "false",
+                    "type": "WORK",
+                    "street": "S1",
+                    "city": "T1",
+                    "region": "R1",
+                    "index": "I1",
+                    "country": "G1"
+                }
+            },
+            "events": {
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "Anniversary",
+                    "day": "12",
+                    "month": "01",
+                    "year": "",
+                    "event_type": "ANNIVERSARY"
+                },
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "SpecDate",
+                    "day": "12",
+                    "month": "01",
+                    "year": "2024",
+                    "event_type": "SPECIAL"
+                },
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "Other",
+                    "day": "12",
+                    "month": "04",
+                    "year": "",
+                    "event_type": "OTHER"
+                },
+                "Event": {
+                    "encoded": "false",
+                    "event_name": "Birthday",
+                    "day": "12",
+                    "month": "01",
+                    "year": "2024",
+                    "event_type": "BDAY"
+                }
+            },
+            "social_net": {
+                "Social": {
+                    "encoded": "false",
+                    "name": "WHATSAPP",
+                    "contact": "whazzzzap",
+                    "is_custom": "false"
+                },
+                "Social": {
+                    "encoded": "false",
+                    "name": "Special Sns",
+                    "contact": "this sns",
+                    "is_custom": "true"
+                }
+            },
+            "relations": {
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Rel1",
+                    "type_name": "Close Relative",
+                    "type_num": "9"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Mother",
+                    "type_name": "Mother",
+                    "type_num": "8"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Father",
+                    "type_name": "Father",
+                    "type_num": "5"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Brother",
+                    "type_name": "Brother",
+                    "type_num": "2"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Sister",
+                    "type_name": "Sister",
+                    "type_num": "13"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Spouse",
+                    "type_name": "Spouse",
+                    "type_num": "14"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Child",
+                    "type_name": "Child",
+                    "type_num": "3"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Friend",
+                    "type_name": "Friend",
+                    "type_num": "6"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Relarive",
+                    "type_name": "Relative",
+                    "type_num": "12"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Partner",
+                    "type_name": "Partner",
+                    "type_num": "4"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "WorkPartner",
+                    "type_name": "Work Partner",
+                    "type_num": "10"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Boss",
+                    "type_name": "Boss",
+                    "type_num": "7"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Assistant",
+                    "type_name": "Assistant",
+                    "type_num": "1"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Recommended",
+                    "type_name": "Recommendation",
+                    "type_num": "11"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Some Guy",
+                    "type_name": "Other Relative",
+                    "type_num": "0"
+                },
+                "Relation": {
+                    "encoded": "false",
+                    "name": "Someone One",
+                    "type_name": "SuperSpecial",
+                    "type_num": "0"
                 }
             }
         }

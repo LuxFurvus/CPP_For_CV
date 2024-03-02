@@ -1,11 +1,108 @@
-
 #include <map>
 #include <functional>
 #include <vector>
 #include <string>
 #include "vcfe_serializer.hpp"
 
-void BoostSerializer::serialize_phonetic_name(const PhoneticRecord& phoneticName, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_vcards(const std::vector<ContactData>& cards) {
+	for (size_t i = 0; i < cards.size(); ++i) {
+		boost::property_tree::ptree card_node;
+		const auto& card = cards[i];
+
+		// Serialize single entries
+		if (!card.names.is_empty())         serialize_names(card.names, card_node);
+		if (!card.phonetic_name.is_empty()) serialize_phonetic_name(card.phonetic_name, card_node);
+		if (!card.nickname.is_empty())      serialize_nick_name(card.nickname, card_node);
+		if (!card.workinfo.is_empty())      serialize_work_info(card.workinfo, card_node);
+		if (!card.note.is_empty())          serialize_note(card.note, card_node);
+
+		// Serialize arrays
+		if (!card.telephones.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& telephone : card.telephones) {
+				boost::property_tree::ptree telephone_node;
+				serialize_telephone(telephone, telephone_node);
+				node.push_back(std::make_pair("Telephone", telephone_node));
+			}
+			card_node.add_child("telephones", node); // Add telephones node to card
+		}
+
+		if (!card.emails.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& email : card.emails) {
+				boost::property_tree::ptree email_node;
+				serialize_emails(email, email_node);
+				node.push_back(std::make_pair("Email", email_node));
+			}
+			card_node.add_child("emails", node); // Add emails node to card
+		}
+
+		if (!card.addresses.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& address : card.addresses) {
+				boost::property_tree::ptree address_node;
+				serialize_address(address, address_node);
+				node.push_back(std::make_pair("Address", address_node));
+			}
+			card_node.add_child("addresses", node); // Add addresses node to card
+		}
+
+		if (!card.events.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& event : card.events) {
+				boost::property_tree::ptree event_node;
+				serialize_event(event, event_node);
+				node.push_back(std::make_pair("Event", event_node));
+			}
+			card_node.add_child("events", node); // Add events node to card
+		}
+
+		if (!card.urls.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& url : card.urls) {
+				boost::property_tree::ptree url_node;
+				serialize_url(url, url_node);
+				node.push_back(std::make_pair("Url", url_node));
+			}
+			card_node.add_child("urls", node); // Add urls node to card
+		}
+
+		if (!card.socials.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& social : card.socials) {
+				boost::property_tree::ptree social_node;
+				serialize_social_net(social, social_node);
+				node.push_back(std::make_pair("Social", social_node));
+			}
+			card_node.add_child("social_net", node); // Add social_net node to card
+		}
+		if (!card.relations.empty()) {
+			boost::property_tree::ptree node;
+			for (const auto& relation : card.relations) {
+				boost::property_tree::ptree relation_node;
+				serialize_relation(relation, relation_node);
+				node.push_back(std::make_pair("Relation", relation_node));
+			}
+			card_node.add_child("relations", node); // Add relations node to card
+		}
+
+		card_tree.add_child("cards.Card", card_node); // Add card node to card tree
+	}
+}
+
+void PropertyTreeSerializer::serialize_names(const NameRecord& names, boost::property_tree::ptree& pt) {
+	if (names.is_empty()) return;
+
+	boost::property_tree::ptree& name_node = pt.add_child("Name", {}); // Add Name node
+	name_node.put("encoded", names.is_encoded());
+	name_node.put("family", names.family);
+	name_node.put("personal", names.personal);
+	name_node.put("father", names.father);
+	name_node.put("address_form", names.address_form);
+	name_node.put("suffix", names.suffix);
+}
+
+void PropertyTreeSerializer::serialize_phonetic_name(const PhoneticRecord& phoneticName, boost::property_tree::ptree& pt) {
 	if (phoneticName.is_empty()) return;
 
 	pt.put("PhoneticName.encoded", phoneticName.is_encoded());
@@ -14,42 +111,67 @@ void BoostSerializer::serialize_phonetic_name(const PhoneticRecord& phoneticName
 	pt.put("PhoneticName.last", phoneticName.last);
 }
 
-void BoostSerializer::serialize_nick_name(const NickNameRecord& nickName, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_nick_name(const NickNameRecord& nickName, boost::property_tree::ptree& pt) {
 	if (nickName.is_empty()) return;
 
 	pt.put("NickNameRecord.encoded", nickName.is_encoded());
 	pt.put("NickNameRecord.nick", nickName.nick);
 }
 
-void BoostSerializer::serialize_emails(const EmailRecord& emails, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_work_info(const WorkInfoRecord& work_info, boost::property_tree::ptree& pt) {
+	if (work_info.is_empty()) return;
+
+	pt.put("WorkInfo.encoded", work_info.is_encoded());
+	pt.put("WorkInfo.company", work_info.company);
+	pt.put("WorkInfo.department", work_info.department);
+	pt.put("WorkInfo.title", work_info.title);
+}
+
+void PropertyTreeSerializer::serialize_note(const NoteRecord& note, boost::property_tree::ptree& pt) {
+	if (note.is_empty()) return;
+
+	pt.put("Note.encoded", note.is_encoded());
+	pt.put("Note.note_text", note.note_text);
+}
+
+void PropertyTreeSerializer::serialize_telephone(const TelephoneRecord& telephone, boost::property_tree::ptree& pt) {
+	if (telephone.is_empty()) return;
+
+	pt.put("encoded", telephone.is_encoded());
+	pt.put("type", telephone.type);
+	pt.put("number", telephone.number);
+	pt.put("is_custom", telephone.is_custom);
+}
+
+void PropertyTreeSerializer::serialize_emails(const EmailRecord& emails, boost::property_tree::ptree& pt) {
 	if (emails.is_empty()) return;
 
-	pt.put("Email.encoded", emails.is_encoded());
-	pt.put("Email.type", emails.type);
-	pt.put("Email.address", emails.address);
-	pt.put("Email.is_custom", emails.is_custom);
+	pt.put("encoded", emails.is_encoded());
+	pt.put("type", emails.type);
+	pt.put("address", emails.address);
+	pt.put("is_custom", emails.is_custom);
 }
 
-void BoostSerializer::serialize_address(const AddressRecord& addresses, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_address(const AddressRecord& addresses, boost::property_tree::ptree& pt) {
 	if (addresses.is_empty()) return;
 
-	pt.put("Address.encoded", addresses.is_encoded());
-	pt.put("Address.type", addresses.type);
-	pt.put("Address.street", addresses.street);
-	pt.put("Address.city", addresses.city);
-	pt.put("Address.region", addresses.region);
-	pt.put("Address.index", addresses.index);
-	pt.put("Address.country", addresses.country);
+	pt.put("encoded", addresses.is_encoded());
+	pt.put("type", addresses.type);
+	pt.put("street", addresses.street);
+	pt.put("city", addresses.city);
+	pt.put("region", addresses.region);
+	pt.put("index", addresses.index);
+	pt.put("country", addresses.country);
 }
 
-void BoostSerializer::serialize_event(const EventRecord& event, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_event(const EventRecord& event, boost::property_tree::ptree& pt) {
 	if (event.is_empty()) return;
 
-	pt.put("Event.encoded", event.is_encoded());
-	pt.put("Event.event_name", event.event_name);
-	pt.put("Event.day", event.day);
-	pt.put("Event.month", event.month);
-	pt.put("Event.year", event.year);
+	pt.put("encoded", event.is_encoded());
+	pt.put("event_name", event.event_name);
+	pt.put("day", event.day);
+	pt.put("month", event.month);
+	pt.put("year", event.year);
 
 	// Convert the EventType enum to a string for serialization
 	std::string event_type_str;
@@ -62,188 +184,171 @@ void BoostSerializer::serialize_event(const EventRecord& event, boost::property_
 	default: event_type_str = "NONE";
 	}
 
-	pt.put("Event.event_type", event_type_str);
+	pt.put("event_type", event_type_str);
 }
 
-void BoostSerializer::serialize_work_info(const WorkInfoRecord& work_info, boost::property_tree::ptree& pt) {
-	if (work_info.is_empty()) return;
-
-	pt.put("WorkInfo.encoded", work_info.is_encoded());
-	pt.put("WorkInfo.company", work_info.company);
-	pt.put("WorkInfo.department", work_info.department);
-	pt.put("WorkInfo.title", work_info.title);
-}
-
-void BoostSerializer::serialize_url(const UrlRecord& url, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_url(const UrlRecord& url, boost::property_tree::ptree& pt) {
 	if (url.is_empty()) return;
 
-	pt.put("Url.encoded", url.is_encoded());
-	pt.put("Url.url_address", url.url_address);
+	pt.put("encoded",	  url.is_encoded());
+	pt.put("url_address", url.url_address);
 }
 
-void BoostSerializer::serialize_note(const NoteRecord& note, boost::property_tree::ptree& pt) {
-	if (note.is_empty()) return;
-
-	pt.put("Note.encoded", note.is_encoded());
-	pt.put("Note.note_text", note.note_text);
-}
-
-void BoostSerializer::serialize_social_net(const SocialNetRecord& social_net, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_social_net(const SocialNetRecord& social_net, boost::property_tree::ptree& pt) {
 	if (social_net.is_empty()) return;
 
-	pt.put("SocialNet.encoded", social_net.is_encoded());
-	pt.put("SocialNet.name", social_net.name);
-	pt.put("SocialNet.contact", social_net.contact);
-	pt.put("SocialNet.is_custom", social_net.is_custom);
+	pt.put("encoded",	social_net.is_encoded());
+	pt.put("name",		social_net.name);
+	pt.put("contact",	social_net.contact);
+	pt.put("is_custom", social_net.is_custom);
 }
 
-void BoostSerializer::serialize_relation(const RelationRecord& relation, boost::property_tree::ptree& pt) {
+void PropertyTreeSerializer::serialize_relation(const RelationRecord& relation, boost::property_tree::ptree& pt) {
 	if (relation.is_empty()) return;
 
-	pt.put("Relation.encoded", relation.is_encoded());
-	pt.put("Relation.name", relation.name);
-	pt.put("Relation.type_name", relation.type_name);
-	pt.put("Relation.type_num", relation.type_num);
+	pt.put("encoded",	relation.is_encoded());
+	pt.put("name",		relation.name);
+	pt.put("type_name", relation.type_name);
+	pt.put("type_num",  relation.type_num);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef PUPPP
-void BoostSerializer::serialize_vcards(const std::vector<ContactData>& cards) {
-	for (size_t i = 0; i < cards.size(); ++i) {
-		//std::ostringstream index_str;
-		//index_str << std::setw(4) << std::setfill('0') << i;
-		//index_str << std::setw(4) << std::setfill('0') << i;
-
-		boost::property_tree::ptree card_node;
-		const auto& card = cards[i];
-
-		// Serialize if they are not empty
-		if (!card.names.is_empty())			serialize_names(card.names, card_node);
-		if (!card.phonetic_name.is_empty()) serialize_phonetic_name(card.phonetic_name, card_node);
-		if (!card.nickname.is_empty())		serialize_nick_name(card.nickname, card_node);
-		if (!card.workinfo.is_empty())		serialize_work_info(card.workinfo, card_node);
-		if (!card.note.is_empty())			serialize_note(card.note, card_node);
-
-		// Helper function to serialize and add child nodes
-		auto serialize_add_child = [&](const auto& collection, auto serializer, const std::string& child_name) {
-			if (!collection.empty()) {
-				boost::property_tree::ptree intermediate_node;
-				for (const auto& item : collection) {
-					if (!item.is_empty()) {
-						boost::property_tree::ptree item_node;
-						(this->*serializer)(item, item_node);
-						intermediate_node.push_back(std::make_pair("", item_node));
-					}
-				}
-				if (!intermediate_node.empty()) {
-					card_node.add_child(child_name, intermediate_node);
-				}
-			}
-			};
-
-		// Serialize other attributes using the helper
-		serialize_add_child(card.telephones, &BoostSerializer::serialize_telephone, "telephones");
-		serialize_add_child(card.emails, &BoostSerializer::serialize_emails, "emails");
-		serialize_add_child(card.addresses, &BoostSerializer::serialize_address, "addresses");
-		serialize_add_child(card.urls, &BoostSerializer::serialize_url, "urls");
-		serialize_add_child(card.events, &BoostSerializer::serialize_event, "events");
-		serialize_add_child(card.socials, &BoostSerializer::serialize_social_net, "socials");
-		serialize_add_child(card.relations, &BoostSerializer::serialize_relation, "relations");
-
-		// Add the fully assembled card node to the main tree
-		//card_tree.add_child("cards.Card_" + index_str.str(), card_node);
-		card_tree.add_child("cards.Card", card_node);
-	}
-}
-
-
-void BoostSerializer::serialize_names(const NameRecord& names, boost::property_tree::ptree& pt) {
-	if (names.is_empty()) return;
-
-	boost::property_tree::ptree& name_node = pt.add("Name", "");
-	name_node.put("encoded", names.is_encoded());
-	name_node.put("family", names.family);
-	name_node.put("personal", names.personal);
-	name_node.put("father", names.father);
-	name_node.put("address_form", names.address_form);
-	name_node.put("suffix", names.suffix);
-}
-
-void BoostSerializer::serialize_telephone(const TelephoneRecord& telephones, boost::property_tree::ptree& pt) {
-	if (telephones.is_empty()) return;
-
-	pt.put("Telephone.encoded", telephones.is_encoded());
-	pt.put("Telephone.type", telephones.type);
-	pt.put("Telephone.number", telephones.number);
-	pt.put("Telephone.is_custom", telephones.is_custom);
-}
-
+#ifdef NOUSE
 #endif
 
 /////////////////////////////////////////////////////////////////////////////////////////
 
-void BoostSerializer::serialize_vcards(const std::vector<ContactData>& cards) {
-	for (size_t i = 0; i < cards.size(); ++i) {
 
-		boost::property_tree::ptree card_node;
-		const auto& card = cards[i];
+void PropertyTreeSerializer::deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards) {
+	// Determine file extension
+	std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
 
-		// Serialize if names are not empty
-		if (!card.names.is_empty())
-			serialize_names(card.names, card_node);
+	// Create an empty property tree
+	boost::property_tree::ptree pt;
 
-		// Serialize telephones if not empty
-		if (!card.telephones.empty()) {
-			boost::property_tree::ptree telephones_node;
-			for (const auto& telephone : card.telephones) {
-				boost::property_tree::ptree telephone_node;
-				serialize_telephone(telephone, telephone_node);
-				telephones_node.push_back(std::make_pair("Telephone", telephone_node)); // Push Telephone node
-			}
-			card_node.add_child("telephones", telephones_node); // Add telephones node to card
+	// Load the file into the property tree based on the file extension
+	if (file_extension == "json") {
+		boost::property_tree::read_json(filename, pt);
+	}
+	else if (file_extension == "xml") {
+		boost::property_tree::read_xml(filename, pt);
+	}
+	else {
+		// Unsupported file type, handle appropriately
+		throw std::invalid_argument("Unsupported file type");
+	}
+
+	for (const auto& card_node : pt.get_child("cards")) {
+		ContactData card;
+
+		// Deserialize names
+		if (auto names_node = card_node.second.get_child_optional("Name")) {
+			deserialize_names(names_node.get(), card.names);
 		}
 
-		card_tree.add_child("cards.Card", card_node); // Add card node to card tree
+		// Deserialize phonetic names
+		if (auto phonetic_names_node = card_node.second.get_child_optional("PhoneticName")) {
+			deserialize_phonetic(phonetic_names_node.get(), card.phonetic_name);
+		}
+
+		// Deserialize nicknames
+		if (auto nickname_node = card_node.second.get_child_optional("NickName")) {
+			deserialize_nick_name(nickname_node.get(), card.nickname);
+		}
+
+		// Deserialize work info
+		if (auto work_info_node = card_node.second.get_child_optional("WorkInfo")) {
+			deserialize_work_info(work_info_node.get(), card.workinfo);
+		}
+
+		// Deserialize notes
+		if (auto note_node = card_node.second.get_child_optional("Note")) {
+			deserialize_note(note_node.get(), card.note);
+		}
+
+		// Deserialize telephones
+		if (auto telephones_node = card_node.second.get_child_optional("telephones")) {
+			for (const auto& telephone_node : telephones_node.get()) {
+				TelephoneRecord telephone;
+				deserialize_telephone(telephone_node.second, telephone);
+				card.telephones.push_back(telephone);
+			}
+		}
+
+		// Deserialize emails
+		if (auto emails_node = card_node.second.get_child_optional("emails")) {
+			for (const auto& email_node : emails_node.get()) {
+				EmailRecord email;
+				deserialize_email(email_node.second, email);
+				card.emails.push_back(email);
+			}
+		}
+
+		// Deserialize addresses
+		if (auto addresses_node = card_node.second.get_child_optional("addresses")) {
+			for (const auto& address_node : addresses_node.get()) {
+				AddressRecord address;
+				deserialize_address(address_node.second, address);
+				card.addresses.push_back(address);
+			}
+		}
+
+		// Deserialize URLs
+		if (auto urls_node = card_node.second.get_child_optional("urls")) {
+			for (const auto& url_node : urls_node.get()) {
+				UrlRecord url;
+				deserialize_url(url_node.second, url);
+				card.urls.push_back(url);
+			}
+		}
+
+		// Deserialize events
+		if (auto events_node = card_node.second.get_child_optional("events")) {
+			for (const auto& event_node : events_node.get()) {
+				EventRecord event;
+				deserialize_event(event_node.second, event);
+				card.events.push_back(event);
+			}
+		}
+
+		// Deserialize social networks
+		if (auto social_nets_node = card_node.second.get_child_optional("social_nets")) {
+			for (const auto& social_net_node : social_nets_node.get()) {
+				SocialNetRecord social_net;
+				deserialize_social_net(social_net_node.second, social_net);
+				card.socials.push_back(social_net);
+			}
+		}
+
+		// Deserialize relations
+		if (auto relations_node = card_node.second.get_child_optional("relations")) {
+			for (const auto& relation_node : relations_node.get()) {
+				RelationRecord relation;
+				deserialize_relation(relation_node.second, relation);
+				card.relations.push_back(relation);
+			}
+		}
+
+		cards.push_back(card);
 	}
 }
 
-void BoostSerializer::serialize_names(const NameRecord& names, boost::property_tree::ptree& pt) {
-	if (names.is_empty()) return;
 
-	boost::property_tree::ptree& name_node = pt.add_child("Name", {}); // Add Name node
-	name_node.put("encoded", names.is_encoded());
-	name_node.put("family", names.family);
-	name_node.put("personal", names.personal);
-	name_node.put("father", names.father);
-	name_node.put("address_form", names.address_form);
-	name_node.put("suffix", names.suffix);
-}
+void PropertyTreeSerializer::deserialize_names(const boost::property_tree::ptree& pt, NameRecord& names) {
+	if (pt.empty()) return;
 
-void BoostSerializer::serialize_telephone(const TelephoneRecord& telephone, boost::property_tree::ptree& pt) {
-	pt.put("encoded", telephone.is_encoded()); // Corrected attribute names
-	pt.put("type", telephone.type);
-	pt.put("number", telephone.number);
-	pt.put("is_custom", telephone.is_custom);
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-
-
-void BoostSerializer::deserialize_name(NameRecord& names, const boost::property_tree::ptree& node) {
-	if (node.empty()) return;
-	if (node.get<bool>("encoded", false)) {
+	if (pt.get<bool>("encoded", false)) {
 		names.set_encoded_state();
 	}
-	names.family = node.get<std::string>("family", "");
-	names.personal = node.get<std::string>("personal", "");
-	names.father = node.get<std::string>("father", "");
-	names.address_form = node.get<std::string>("address_form", "");
-	names.suffix = node.get<std::string>("suffix", "");
+	names.family = pt.get<std::string>("family");
+	names.personal = pt.get<std::string>("personal");
+	names.father = pt.get<std::string>("father");
+	names.address_form = pt.get<std::string>("address_form");
+	names.suffix = pt.get<std::string>("suffix");
 }
 
-void BoostSerializer::deserialize_phonetic(PhoneticRecord& phonetic_names, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_phonetic(const boost::property_tree::ptree& node, PhoneticRecord& phonetic_names) {
 	if (node.empty()) return;
 	if (node.get<bool>("encoded", false)) {
 		phonetic_names.set_encoded_state();
@@ -253,7 +358,7 @@ void BoostSerializer::deserialize_phonetic(PhoneticRecord& phonetic_names, const
 	phonetic_names.last = node.get<std::string>("last", "");
 }
 
-void BoostSerializer::deserialize_nick_name(NickNameRecord& nickname, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_nick_name(const boost::property_tree::ptree& node, NickNameRecord& nickname) {
 	if (node.empty()) return;
 	if (node.get<bool>("encoded", false)) {
 		nickname.set_encoded_state();
@@ -261,7 +366,7 @@ void BoostSerializer::deserialize_nick_name(NickNameRecord& nickname, const boos
 	nickname.nick = node.get<std::string>("nick", "");
 }
 
-void BoostSerializer::deserialize_work_info(WorkInfoRecord& work_info, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_work_info(const boost::property_tree::ptree& node, WorkInfoRecord& work_info) {
 	if (node.empty()) return;
 	if (node.get<bool>("encoded", false)) {
 		work_info.set_encoded_state();
@@ -271,7 +376,7 @@ void BoostSerializer::deserialize_work_info(WorkInfoRecord& work_info, const boo
 	work_info.title = node.get<std::string>("title", "");
 }
 
-void BoostSerializer::deserialize_note(NoteRecord& note, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_note(const boost::property_tree::ptree& node, NoteRecord& note) {
 	if (node.empty()) return;
 	if (node.get<bool>("encoded", false)) {
 		note.set_encoded_state();
@@ -279,64 +384,65 @@ void BoostSerializer::deserialize_note(NoteRecord& note, const boost::property_t
 	note.note_text = node.get<std::string>("note_text", "");
 }
 
-void BoostSerializer::deserialize_telephone(TelephoneRecord& telephones, const boost::property_tree::ptree& node) {
-	if (node.empty()) return;
+void PropertyTreeSerializer::deserialize_telephone(const boost::property_tree::ptree& pt, TelephoneRecord& telephone) {
+	if (pt.empty()) return;
 
-	if (node.get<bool>("Telephone.encoded", false)) {
-		telephones.set_encoded_state();
+	if (pt.get<bool>("encoded", false)) {
+		telephone.set_encoded_state();
 	}
-	telephones.type = node.get<std::string>("Telephone.type", "");
-	telephones.number = node.get<std::string>("Telephone.number", "");
-	telephones.is_custom = node.get<bool>("Telephone.is_custom", false);
+
+	telephone.type = pt.get<std::string>("type");
+	telephone.number = pt.get<std::string>("number");
+	telephone.is_custom = pt.get<bool>("is_custom");
 }
 
-void BoostSerializer::deserialize_email(EmailRecord& emails, const boost::property_tree::ptree& node) {
-	if (node.empty()) return;
+void PropertyTreeSerializer::deserialize_email(const boost::property_tree::ptree& pt, EmailRecord& email) {
+	if (pt.empty()) return;
 
-	if (node.get<bool>("Email.encoded", false)) {
-		emails.set_encoded_state();
+	if (pt.get<bool>("encoded", false)) {
+		email.set_encoded_state();
 	}
-	emails.type = node.get<std::string>("Email.type", "");
-	emails.address = node.get<std::string>("Email.address", "");
-	emails.is_custom = node.get<bool>("Email.is_custom", false);
+	email.type = pt.get<std::string>("type", "");
+	email.address = pt.get<std::string>("address", "");
+	email.is_custom = pt.get<bool>("is_custom", false);
 }
 
-void BoostSerializer::deserialize_address(AddressRecord& addresses, const boost::property_tree::ptree& node) {
-	if (node.empty()) return;
+void PropertyTreeSerializer::deserialize_address(const boost::property_tree::ptree& pt, AddressRecord& address) {
+	if (pt.empty()) return;
 
-	if (node.get<bool>("Address.encoded", false)) {
-		addresses.set_encoded_state();
+	if (pt.get<bool>("encoded", false)) {
+		address.set_encoded_state();
 	}
-	addresses.type = node.get<std::string>("Address.type", "");
-	addresses.street = node.get<std::string>("Address.street", "");
-	addresses.city = node.get<std::string>("Address.city", "");
-	addresses.region = node.get<std::string>("Address.region", "");
-	addresses.index = node.get<std::string>("Address.index", "");
-	addresses.country = node.get<std::string>("Address.country", "");
+	address.type = pt.get<std::string>("type", "");
+	address.street = pt.get<std::string>("street", "");
+	address.city = pt.get<std::string>("city", "");
+	address.region = pt.get<std::string>("region", "");
+	address.index = pt.get<std::string>("index", "");
+	address.country = pt.get<std::string>("country", "");
 }
 
-void BoostSerializer::deserialize_url(UrlRecord& url, const boost::property_tree::ptree& node) {
-	if (node.empty()) return;
+void PropertyTreeSerializer::deserialize_url(const boost::property_tree::ptree& pt, UrlRecord& url) {
+	if (pt.empty()) return;
 
-	if (node.get<bool>("Url.encoded", false)) {
+	if (pt.get<bool>("encoded", false)) {
 		url.set_encoded_state();
 	}
-	url.url_address = node.get<std::string>("Url.url_address", "");
+	url.url_address = pt.get<std::string>("url_address", "");
 }
 
-void BoostSerializer::deserialize_event(EventRecord& event, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_event(const boost::property_tree::ptree& node, EventRecord& event) {
 	if (node.empty()) return;
 
-	if (node.get<bool>("Event.encoded", false)) {
+	if (node.get<bool>("encoded", false)) {
 		event.set_encoded_state();
 	}
-	event.event_name = node.get<std::string>("Event.event_name", "");
-	event.day = node.get<std::string>("Event.day", "");
-	event.month = node.get<std::string>("Event.month", "");
-	event.year = node.get<std::string>("Event.year", "");
+	event.event_name = node.get<std::string>("event_name", "");
+	event.day = node.get<std::string>("day", "");
+	event.month = node.get<std::string>("month", "");
+	event.year = node.get<std::string>("year", "");
 
 	// Convert the EventType string back to enum
-	std::string event_type_str = node.get<std::string>("Event.event_type", "");
+	std::string event_type_str = node.get<std::string>("event_type", "");
 	if (event_type_str == "SPECIAL") {
 		event.event_type = EventType::SPECIAL;
 	}
@@ -357,27 +463,28 @@ void BoostSerializer::deserialize_event(EventRecord& event, const boost::propert
 	}
 }
 
-void BoostSerializer::deserialize_social_net(SocialNetRecord& social_net, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_social_net(const boost::property_tree::ptree& node, SocialNetRecord& social_net) {
 	if (node.empty()) return;
 
-	if (node.get<bool>("SocialNet.encoded", false)) {
+	if (node.get<bool>("encoded", false)) {
 		social_net.set_encoded_state();
 	}
-	social_net.name = node.get<std::string>("SocialNet.name", "");
-	social_net.contact = node.get<std::string>("SocialNet.contact", "");
-	social_net.is_custom = node.get<bool>("SocialNet.is_custom", false);
+	social_net.name = node.get<std::string>("name", "");
+	social_net.contact = node.get<std::string>("contact", "");
+	social_net.is_custom = node.get<bool>("is_custom", false);
 }
 
-void BoostSerializer::deserialize_relation(RelationRecord& relation, const boost::property_tree::ptree& node) {
+void PropertyTreeSerializer::deserialize_relation(const boost::property_tree::ptree& node, RelationRecord& relation) {
 	if (node.empty()) return;
 
-	if (node.get<bool>("Relation.encoded", false)) {
+	if (node.get<bool>("encoded", false)) {
 		relation.set_encoded_state();
 	}
-	relation.name = node.get<std::string>("Relation.name", "");
-	relation.type_name = node.get<std::string>("Relation.type_name", "");
-	relation.type_num = node.get<int>("Relation.type_num", 0);
+	relation.name = node.get<std::string>("name", "");
+	relation.type_name = node.get<std::string>("type_name", "");
+	relation.type_num = node.get<int>("type_num", 0);
 }
+
 
 
 #ifdef DDDD

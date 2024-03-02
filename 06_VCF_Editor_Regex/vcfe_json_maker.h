@@ -9,7 +9,7 @@
 #include "vcfe_data_containers.h"
 #include "vcfe_serializer.hpp"
 
-class JsonMakerBoost : public IBaseSerializer, public BoostSerializer {
+class JsonMakerBoost : public IBaseSerializer, public PropertyTreeSerializer {
 public:
 
 	inline void print_to_file(const std::string& filename) const noexcept override {

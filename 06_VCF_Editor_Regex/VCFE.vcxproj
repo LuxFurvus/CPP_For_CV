@@ -160,12 +160,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AAA.vcf" />
-    <None Include="output.json" />
     <None Include="TESTITTO.vcf" />
     <None Include="ZZZ.vcf" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="output.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

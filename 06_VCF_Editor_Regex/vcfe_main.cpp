@@ -16,7 +16,7 @@
 // 
 
 #ifdef OOOOOO
-void BoostSerializer::deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards) {
+void PropertyTreeSerializer::deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards) {
 	try {
 		// Determine file extension
 		std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
@@ -139,69 +139,6 @@ void BoostSerializer::deserialize_vcards(const std::string& filename, std::vecto
 
 #endif
 
-void BoostSerializer::deserialize_names(const boost::property_tree::ptree& pt, NameRecord& names) {
-	if (pt.get<bool>("encoded", false)) {
-		names.set_encoded_state();
-	}
-	names.family = pt.get<std::string>("family");
-	names.personal = pt.get<std::string>("personal");
-	names.father = pt.get<std::string>("father");
-	names.address_form = pt.get<std::string>("address_form");
-	names.suffix = pt.get<std::string>("suffix");
-}
-
-void BoostSerializer::deserialize_telephone(const boost::property_tree::ptree& pt, TelephoneRecord& telephone) {
-
-	//telephone.is_encoded = pt.get<bool>("encoded");
-	if (pt.get<bool>("encoded", false)) {
-		telephone.set_encoded_state();
-	}
-
-	telephone.type = pt.get<std::string>("type");
-	telephone.number = pt.get<std::string>("number");
-	telephone.is_custom = pt.get<bool>("is_custom");
-}
-
-void BoostSerializer::deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards) {
-	// Determine file extension
-	std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
-
-	// Create an empty property tree
-	boost::property_tree::ptree pt;
-
-	// Load the file into the property tree based on the file extension
-	if (file_extension == "json") {
-		boost::property_tree::read_json(filename, pt);
-	}
-	else if (file_extension == "xml") {
-		boost::property_tree::read_xml(filename, pt);
-	}
-	else {
-		// Unsupported file type, handle appropriately
-		throw std::invalid_argument("Unsupported file type");
-	}
-
-	for (const auto& card_node : pt.get_child("cards")) {
-		ContactData card;
-
-		// Deserialize names
-		if (auto names_node = card_node.second.get_child_optional("Name")) {
-			deserialize_names(names_node.get(), card.names);
-		}
-
-		// Deserialize telephones
-		if (auto telephones_node = card_node.second.get_child_optional("telephones")) {
-			for (const auto& telephone_node : telephones_node.get()) {
-				TelephoneRecord telephone;
-				deserialize_telephone(telephone_node.second, telephone);
-				card.telephones.push_back(telephone);
-			}
-		}
-
-		cards.push_back(card);
-	}
-}
-
 
 
 
@@ -218,7 +155,7 @@ int main() {
 	system("chcp 65001 >NUL");
 	std::vector<ContactData> cards;
 
-	const std::string input_file{ "ZZZ.vcf" };
+	const std::string input_file{ "AAA.vcf" };
 	const std::string output_file{ "TESTITTO.vcf" };
 	const std::string output_json{ "output.json" };
 	const std::string output_xml{ "output.xml" };

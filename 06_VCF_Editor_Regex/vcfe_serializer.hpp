@@ -17,12 +17,11 @@ public:
 
 	using Cards = std::vector<ContactData>;
 
-	// Virtual functions for output
 	virtual void print_to_file(const std::string& filename) const noexcept = 0;
 	virtual void print_to_console() const noexcept = 0;
 };
 
-class BoostSerializer {
+class PropertyTreeSerializer {
 	using ptree = boost::property_tree::ptree;
 protected:
 	boost::property_tree::ptree card_tree;
@@ -40,35 +39,28 @@ protected:
 	void serialize_social_net(const SocialNetRecord& social_net, ptree& pt);
 	void serialize_relation(const RelationRecord& relation, ptree& pt);
 
-	void deserialize_name(NameRecord& names, const ptree& node);
-	void deserialize_phonetic(PhoneticRecord& phonetic_names, const ptree& node);
-	void deserialize_nick_name(NickNameRecord& nickname, const ptree& node);
-	void deserialize_note(NoteRecord& note, const ptree& node);
-	void deserialize_work_info(WorkInfoRecord& work_info, const ptree& node);
-	void deserialize_telephone(TelephoneRecord& telephones, const ptree& node);
-	void deserialize_email(EmailRecord& emails, const ptree& node);
-	void deserialize_address(AddressRecord& addresses, const ptree& node);
-	void deserialize_event(EventRecord& event, const ptree& node);
-	void deserialize_url(UrlRecord& url, const ptree& node);
-	void deserialize_social_net(SocialNetRecord& social_net, const ptree& node);
-	void deserialize_relation(RelationRecord& relation, const ptree& node);
-
+	void deserialize_names(const ptree& pt, NameRecord& names);
+	void deserialize_phonetic(const ptree& node, PhoneticRecord& phonetic_names);
+	void deserialize_nick_name(const ptree& node, NickNameRecord& nickname);
+	void deserialize_work_info(const ptree& node, WorkInfoRecord& work_info);
+	void deserialize_note(const ptree& node, NoteRecord& note);
+	void deserialize_telephone(const ptree& pt, TelephoneRecord& telephone);
+	void deserialize_email(const ptree& pt, EmailRecord& email);
+	void deserialize_address(const ptree& pt, AddressRecord& address);
+	void deserialize_url(const ptree& pt, UrlRecord& url);
+	void deserialize_event(const ptree& node, EventRecord& event);
+	void deserialize_social_net(const ptree& node, SocialNetRecord& social_net);
+	void deserialize_relation(const ptree& node, RelationRecord& relation);
 
 protected:
 	inline const ptree& get_ptree() const noexcept {
 		return card_tree;
 	}
 public:
-	virtual ~BoostSerializer() = default;
+	virtual ~PropertyTreeSerializer() = default;
 
 	void serialize_vcards(const std::vector<ContactData>& cards);
 	void deserialize_vcards(const std::string& filename, std::vector<ContactData>& cards);
-
-	// Declaration for the deserialize_names function
-	void deserialize_names(const boost::property_tree::ptree& pt, NameRecord& names);
-
-	// Declaration for the deserialize_telephone function
-	void deserialize_telephone(const boost::property_tree::ptree& pt, TelephoneRecord& telephone);
 };
 
 
