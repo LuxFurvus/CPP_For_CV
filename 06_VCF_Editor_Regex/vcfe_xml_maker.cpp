@@ -1,11 +1,14 @@
 
+
+#ifdef DEBUG
+
 #include <iomanip>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 #include "vcfe_data_containers.h"
 #include "vcfe_xml_maker.h"
 
-void XmlMakerBoost::make_xml(const std::vector<ContactData>& cards) {
+void XmlMakerBoost::serialize_vcards(const std::vector<ContactData>& cards) {
 	for (size_t i = 0; i < cards.size(); ++i) {
 		std::ostringstream index_str;
 		index_str << std::setw(4) << std::setfill('0') << i;
@@ -135,7 +138,7 @@ void XmlMakerBoost::xml_event_boost(const EventRecord& event, boost::property_tr
 	case EventType::OTHER:		 event_type_str = "OTHER";		 break;
 	case EventType::BDAY:		 event_type_str = "BDAY";		 break;
 	case EventType::ENCODED:	 event_type_str = "ENCODED";	 break;
-	default: event_type_str = "UNKNOWN";
+	default: event_type_str = "NONE";
 	}
 
 	event_node.put("event_type", event_type_str);
@@ -197,3 +200,5 @@ void XmlMakerBoost::xml_relation_boost(const RelationRecord& relation_record, bo
 
 	pt.add_child("Relation", relation_node);
 }
+
+#endif // DEBUG

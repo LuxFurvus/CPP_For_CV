@@ -6,9 +6,10 @@
 #include <vector>
 
 class VcfEntry {
-private: bool encoded{ false };
+private: 
 
 public:
+	bool encoded{ false };
 	bool is_encoded() const noexcept {
 		return encoded;
 	}
@@ -88,7 +89,7 @@ struct AddressRecord : public VcfEntry {
 };
 
 enum class EventType {
-	SPECIAL, ANNIVERSARY, OTHER, BDAY, ENCODED
+	NONE, SPECIAL, ANNIVERSARY, OTHER, BDAY, ENCODED
 };
 
 struct EventRecord : public VcfEntry {

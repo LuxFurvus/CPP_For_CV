@@ -139,11 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="nlohmann.hpp" />
     <ClInclude Include="vcfe_data_containers.h" />
     <ClInclude Include="vcfe_decode_from_hex.h" />
     <ClInclude Include="vcfe_encode_to_hex.h" />
     <ClInclude Include="vcfe_json_maker.h" />
+    <ClInclude Include="vcfe_serializer.hpp" />
     <ClInclude Include="vcfe_vcf_printer.h" />
     <ClInclude Include="vcfe_vcf_parser.h" />
     <ClInclude Include="vcfe_xml_maker.h" />
@@ -153,6 +153,7 @@
     <ClCompile Include="vcfe_encode_to_hex.c" />
     <ClCompile Include="vcfe_json_maker.cpp" />
     <ClCompile Include="vcfe_main.cpp" />
+    <ClCompile Include="vcfe_serializer.cpp" />
     <ClCompile Include="vcfe_vcf_printer.cpp" />
     <ClCompile Include="vcfe_vcf_parser.cpp" />
     <ClCompile Include="vcfe_xml_maker.cpp" />
@@ -161,6 +162,10 @@
     <None Include="AAA.vcf" />
     <None Include="output.json" />
     <None Include="TESTITTO.vcf" />
+    <None Include="ZZZ.vcf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="output.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

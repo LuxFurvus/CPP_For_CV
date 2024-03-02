@@ -654,7 +654,7 @@ void VcfParser::events_parser(const std::string& line, std::unique_ptr<ContactDa
 	event_pattern.assign("CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;([^;]*);[^;]*;([^;]*);");
 
 	if (std::regex_search(line, mm, event_pattern)) {
-		event->event_type = EventType::ENCODED;
+		//event->event_type = EventType::ENCODED;
 		event->set_encoded_state();
 		num_parse(decode(mm[2].str().c_str()),
 			decode(mm[1].str().c_str()));
