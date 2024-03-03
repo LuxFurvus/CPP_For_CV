@@ -553,11 +553,11 @@ void VcfPrinter::print_to_console(const std::vector<ContactData>& cards) const {
 
 //++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++//++
 
-void VcfPrinter::print_to_file(const std::vector<ContactData>& cards, const std::string& vcf_name) const {
+void VcfPrinter::print_to_file(const std::vector<ContactData>& cards, const std::string& filename) const {
 	std::ofstream vcf_stream;
-	vcf_stream.open(vcf_name, std::ios::trunc);
+	vcf_stream.open(std::string(filename).append("vcf"), std::ios::trunc);
 	if (!vcf_stream.is_open()) {
-		printf("Cannot create file %s here!\n", vcf_name.c_str());
+		printf("Cannot create file %s here!\n", filename.c_str());
 		return;
 	}
 

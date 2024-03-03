@@ -2,9 +2,14 @@
 #include <functional>
 #include <vector>
 #include <string>
-#include "vcfe_serializer.hpp"
+#include "vcfe_ptree_parser.hpp"
 
 void PropertyTreeSerializer::serialize_vcards(const std::vector<ContactData>& cards) {
+	
+	if (was_new_file_handled == true) return;
+
+	was_new_file_handled = true;
+	
 	for (size_t i = 0; i < cards.size(); ++i) {
 		boost::property_tree::ptree card_node;
 		const auto& card = cards[i];
@@ -225,22 +230,19 @@ void PropertyTreeSerializer::deserialize_vcards(const std::string& filename, std
 		// Determine file extension
 		std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
 
-		// Create an empty property tree
-		boost::property_tree::ptree pt;
-
 		// Load the file into the property tree based on the file extension
 		if (file_extension == "json") {
-			boost::property_tree::read_json(filename, pt);
+			boost::property_tree::read_json(filename, card_tree);
 		}
 		else if (file_extension == "xml") {
-			boost::property_tree::read_xml(filename, pt);
+			boost::property_tree::read_xml(filename, card_tree);
 		}
 		else {
 			// Unsupported file type, handle appropriately
 			throw std::invalid_argument("Unsupported file type");
 		}
 
-		for (const auto& card_node : pt.get_child("cards")) {
+		for (const auto& card_node : card_tree.get_child("cards")) {
 			ContactData card;
 
 			// Deserialize names
@@ -335,20 +337,20 @@ void PropertyTreeSerializer::deserialize_vcards(const std::string& filename, std
 		}
 	}
 	catch (const boost::property_tree::json_parser_error& e) {
-		std::cerr << "JSON parser error: " << e.what() << std::endl;
-		std::cerr << "Line: " << e.line() << std::endl;
-		std::cerr << "Filename: " << e.filename() << std::endl;
+		std::cerr << "JSON parser error: " << e.what() << '\n';
+		std::cerr << "Line: " << e.line() << '\n';
+		std::cerr << "Filename: " << e.filename() << '\n';
 	}
 	catch (const boost::property_tree::xml_parser_error& e) {
-		std::cerr << "XML parser error: " << e.what() << std::endl;
-		std::cerr << "Line: " << e.line() << std::endl;
-		std::cerr << "Filename: " << e.filename() << std::endl;
+		std::cerr << "XML parser error: " << e.what() << '\n';
+		std::cerr << "Line: " << e.line() << '\n';
+		std::cerr << "Filename: " << e.filename() << '\n';
 	}
 	catch (const std::invalid_argument& e) {
-		std::cerr << "Invalid argument: " << e.what() << std::endl;
+		std::cerr << "Invalid argument: " << e.what() << '\n';
 	}
 	catch (const std::exception& e) {
-		std::cerr << "An error occurred: " << e.what() << std::endl;
+		std::cerr << "An error occurred: " << e.what() << '\n';
 	}
 }
 
