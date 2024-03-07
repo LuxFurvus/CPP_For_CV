@@ -78,13 +78,15 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\include;D:\PROGZ\===LIBRARIES===\libpqxx-master\include</AdditionalIncludeDirectories>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <DisableSpecificWarnings>5045</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Program Files\PostgreSQL\16\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libpq.lib;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\src\Debug\pqxx.lib;ws2_32.lib;wsock32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -97,7 +99,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\include;D:\PROGZ\===LIBRARIES===\libpqxx-master\include</AdditionalIncludeDirectories>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <DisableSpecificWarnings>5045</DisableSpecificWarnings>
     </ClCompile>
@@ -106,6 +108,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Program Files\PostgreSQL\16\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libpq.lib;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\src\Debug\pqxx.lib;ws2_32.lib;wsock32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -116,13 +120,15 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\include;D:\PROGZ\===LIBRARIES===\libpqxx-master\include</AdditionalIncludeDirectories>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <DisableSpecificWarnings>5045</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Program Files\PostgreSQL\16\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libpq.lib;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\src\Debug\pqxx.lib;ws2_32.lib;wsock32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,7 +141,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\PROGZ\===LIBRARIES===\boost_1_84_0;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\include;D:\PROGZ\===LIBRARIES===\libpqxx-master\include</AdditionalIncludeDirectories>
       <ExternalWarningLevel>Level3</ExternalWarningLevel>
       <DisableSpecificWarnings>5045</DisableSpecificWarnings>
     </ClCompile>
@@ -144,6 +150,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Program Files\PostgreSQL\16\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libpq.lib;D:\PROGZ\===LIBRARIES===\libpqxx-master\build\src\Debug\pqxx.lib;ws2_32.lib;wsock32.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -165,7 +173,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AAA.vcf" />
-    <None Include="TESTITTO.vcf" />
+    <None Include="OUTPUT_CARDS.json" />
+    <None Include="OUTPUT_CARDS.vcf" />
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="OUTPUT_CARDS.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

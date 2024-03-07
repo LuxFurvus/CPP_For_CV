@@ -3,10 +3,15 @@
 #define VCFE_VCF_PRINTER_H
 
 #include <fstream>
+#include <functional>
 #include "vcfe_data_containers.hpp"
 
 class VcfPrinter {
 private:
+
+	bool check_for_non_ascii(
+		const std::initializer_list<std::reference_wrapper<const std::string>>& strings) const;
+
 	void print_vcf_name(const NameRecord& names, std::ofstream& ss) const;
 	void print_vcf_phonetics(const PhoneticRecord& phonetics, std::ofstream& ss) const;
 	void print_vcf_nickname(const NickNameRecord& nickname, std::ofstream& ss) const;

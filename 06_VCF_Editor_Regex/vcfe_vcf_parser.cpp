@@ -151,9 +151,6 @@ void VcfParser::name_parser(const std::string& line, std::unique_ptr<ContactData
 
 	// Check if line needs to be decoded
 	bool is_to_decode = (line.contains("ENCODING=QUOTED-PRINTABLE"));
-	if (is_to_decode) {
-		current_card->names.set_encoded_state();
-	}
 
 	if (std::regex_search(line, mm, pattern1)) {
 		// Extract names from the matched parts
@@ -194,7 +191,6 @@ void VcfParser::phonetics_parser(const std::string& line, std::unique_ptr<Contac
 	bool is_to_decode{ false };
 	if (line.contains("ENCODING=QUOTED-PRINTABLE")) {
 		is_to_decode = true;
-		current_card->phonetic_name.set_encoded_state();
 	}
 
 	///////////////////////////////////
@@ -241,7 +237,6 @@ void VcfParser::nick_parser(const std::string& line, std::unique_ptr<ContactData
 	bool is_to_decode{ false };
 	if (line.contains("ENCODING=QUOTED-PRINTABLE")) {
 		is_to_decode = true;
-		current_card->nickname.set_encoded_state();
 	}
 
 	//////////////////////////////////////////////
@@ -277,8 +272,6 @@ void VcfParser::tel_parser(const std::string& line, std::unique_ptr<ContactData>
 
 		new_tel->number = mm[2].str().c_str();
 
-		new_tel->set_encoded_state();
-
 		current_card->telephones.push_back(std::move(*new_tel));
 		return;
 	}
@@ -293,7 +286,6 @@ void VcfParser::tel_parser(const std::string& line, std::unique_ptr<ContactData>
 		std::string decoded_typename(mm[1].str());
 		if (decoded_typename[0] == 'X' && decoded_typename[1] == '-') {
 			decoded_typename = decoded_typename.substr(2);
-			new_tel->is_custom = true;
 		}
 
 		new_tel->type = decoded_typename;
@@ -321,9 +313,6 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 
 		new_email->address = decode(mm[2].str().c_str());
 
-		new_email->set_encoded_state();
-		new_email->is_custom = true;
-
 		current_card->emails.push_back(std::move(*new_email));
 		return;
 	}
@@ -339,8 +328,6 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 
 		new_email->address = decode(mm[2].str().c_str());
 
-		new_email->set_encoded_state();
-
 		current_card->emails.push_back(std::move(*new_email));
 		return;
 	}
@@ -355,8 +342,6 @@ void VcfParser::email_parser(const std::string& line, std::unique_ptr<ContactDat
 		new_email->type = "";
 
 		new_email->address = decode(mm[1].str().c_str());
-
-		new_email->set_encoded_state();
 
 		current_card->emails.push_back(std::move(*new_email));
 		return;
@@ -432,8 +417,6 @@ void VcfParser::address_parser(const std::string& line, std::unique_ptr<ContactD
 		new_address->index = scric[3];
 		new_address->country = scric[4];
 
-		new_address->set_encoded_state();
-
 		current_card->addresses.push_back(*new_address);
 		return;
 	}
@@ -457,8 +440,6 @@ void VcfParser::address_parser(const std::string& line, std::unique_ptr<ContactD
 		new_address->index = scric[3];
 		new_address->country = scric[4];
 
-		new_address->set_encoded_state();
-
 		current_card->addresses.push_back(*new_address);
 		return;
 	}
@@ -479,7 +460,6 @@ void VcfParser::company_parser(const std::string& line, std::unique_ptr<ContactD
 	if (std::regex_search(line, mm, company_pattern)) {
 		current_card->workinfo.company = decode(mm[1].str().c_str());
 		current_card->workinfo.department = decode(mm[2].str().c_str());
-		current_card->workinfo.set_encoded_state();
 
 		return;
 	}
@@ -508,7 +488,6 @@ void VcfParser::title_parser(const std::string& line, std::unique_ptr<ContactDat
 
 	if (std::regex_search(line, mm, title_pattern)) {
 		current_card->workinfo.title = decode(mm[1].str().c_str());
-		current_card->workinfo.set_encoded_state();
 		return;
 	}
 
@@ -546,7 +525,6 @@ void VcfParser::url_parser(const std::string& line, std::unique_ptr<ContactData>
 	if (std::regex_search(line, mm, url_pattern)) {
 		UrlRecord temp;
 		temp.url_address = decode(mm[1].str().c_str());
-		temp.set_encoded_state();
 		current_card->urls.push_back(temp);
 		return;
 	}
@@ -573,7 +551,6 @@ void VcfParser::note_parser(const std::string& line, std::unique_ptr<ContactData
 
 	if (std::regex_search(line, mm, note_pattern)) {
 		current_card->note.note_text = decode(mm[1].str().c_str());
-		current_card->note.set_encoded_state();
 		return;
 	}
 }
@@ -654,10 +631,9 @@ void VcfParser::events_parser(const std::string& line, std::unique_ptr<ContactDa
 	event_pattern.assign("CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:vnd.android.cursor.item/contact_event;([^;]*);[^;]*;([^;]*);");
 
 	if (std::regex_search(line, mm, event_pattern)) {
-		//event->event_type = EventType::ENCODED;
-		event->set_encoded_state();
+		event->event_type = EventType::SPECIAL;
 		num_parse(decode(mm[2].str().c_str()),
-			decode(mm[1].str().c_str()));
+				  decode(mm[1].str().c_str()));
 		return;
 	}
 }
@@ -688,7 +664,7 @@ void VcfParser::socials_parser(const std::string& line, std::unique_ptr<ContactD
 		newname = "HANGOUTS";
 	}
 	else {
-		newname = sns_name.substr(2);
+		newname = sns_name;
 	}
 	std::regex socials_pattern;
 
@@ -698,8 +674,6 @@ void VcfParser::socials_parser(const std::string& line, std::unique_ptr<ContactD
 	if (std::regex_search(line, mm, socials_pattern)) {
 		sns->name = decode(mm[1].str().c_str());
 		sns->contact = decode(mm[2].str().c_str());
-		sns->is_custom = true;
-		sns->set_encoded_state();
 
 		current_card->socials.push_back(*sns);
 		return;
@@ -712,7 +686,7 @@ void VcfParser::socials_parser(const std::string& line, std::unique_ptr<ContactD
 		sns->name = newname;
 
 		sns->contact = decode(mm[1].str().c_str());
-		sns->set_encoded_state();
+		//sns->set_encoded_state();
 
 		current_card->socials.push_back(*sns);
 		return;
@@ -724,7 +698,6 @@ void VcfParser::socials_parser(const std::string& line, std::unique_ptr<ContactD
 	if (std::regex_search(line, mm, socials_pattern)) {
 		sns->name = mm[1];
 		sns->contact = mm[2];
-		sns->is_custom = true;
 		current_card->socials.push_back(*sns);
 		return;
 	}
@@ -828,7 +801,6 @@ void VcfParser::relations_parser(const std::string& line, std::unique_ptr<Contac
 		}
 		select_type(relate->type_num, type_name);
 		relate->type_name = type_name;
-		relate->set_encoded_state();
 
 		current_card->relations.push_back(*relate);
 		return;

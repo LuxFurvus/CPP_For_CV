@@ -3,17 +3,26 @@
 
 #include <iostream>
 #include <string>
+#include <pqxx/pqxx>
+#include <cstdarg>
 
 #include "vcfe_serializer.h"
 /*
 */
 ////////////////
-// 
+// запрос на создание таблиц контактов
+// функция на перевод данных из таблиц в программу
+// функция на перевод данных из программы в таблицы
+
+
+class PGDBHandler {
+public:
+
+};
 
 #ifdef OOOOOO
 
 #endif
-
 
 int main() {
 	system("chcp 65001 >NUL");

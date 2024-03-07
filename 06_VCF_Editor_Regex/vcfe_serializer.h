@@ -21,7 +21,7 @@ public:
 		std::string file_extension = filename.substr(filename.find_last_of(".") + 1);
 		ptree_handler.unset_new_file_handled();
 
-		if (file_extension == "vcf") {
+		if (file_extension == "vcf" || file_extension == "VCF") {
 			vcf_parser.parse_vcf(filename, cards);
 			return;
 		}

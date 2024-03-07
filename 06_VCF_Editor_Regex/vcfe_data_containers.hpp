@@ -6,16 +6,8 @@
 #include <vector>
 
 class VcfEntry {
-private:
-	bool encoded{ false };
 public:
 	~VcfEntry() = default;
-	bool is_encoded() const noexcept {
-		return encoded;
-	}
-	void set_encoded_state() noexcept {
-		encoded = true;
-	}
 	virtual bool is_empty() const = 0;
 };
 
@@ -54,10 +46,20 @@ struct NickNameRecord : public VcfEntry {
 	}
 };
 
+const std::vector<std::string> telephone_types{
+	"CELL",
+	"HOME",
+	"HOME;FAX",
+	"WORK",
+	"WORK;FAX",
+	"VOICE",
+	"PAGER",
+	"CALLBACK"
+};
+
 struct TelephoneRecord : public VcfEntry {
 	std::string type;
 	std::string number;
-	bool is_custom{ false };
 	inline bool is_empty() const override {
 		return number.empty();
 	}
@@ -66,7 +68,6 @@ struct TelephoneRecord : public VcfEntry {
 struct EmailRecord : public VcfEntry {
 	std::string type;
 	std::string address;
-	bool is_custom{ false };
 	inline bool is_empty() const override {
 		return address.empty();
 	}
@@ -89,7 +90,11 @@ struct AddressRecord : public VcfEntry {
 };
 
 enum class EventType {
-	NONE, SPECIAL, ANNIVERSARY, OTHER, BDAY, ENCODED
+	NONE		= -1,
+	SPECIAL		=  0, 
+	ANNIVERSARY	=  1, 
+	OTHER		=  2,
+	BDAY		=  3
 };
 
 struct EventRecord : public VcfEntry {
@@ -131,23 +136,22 @@ struct NoteRecord : public VcfEntry {
 };
 
 const std::vector<std::string> socials_names{
-	"X-WHATSAPP",
-	"X-FACEBOOK",
-	"X-GOOGLE-TALK",
-	"X-QQ",
-	"X-SKYPE-USERNAME",
-	"X-YAHOO",
-	"X-AIM",
-	"X-ICQ",
-	"X-JABBER",
-	"X-MSN",
-	"X-CUSTOM("
+	"WHATSAPP",
+	"FACEBOOK",
+	"GOOGLE-TALK",
+	"QQ",
+	"SKYPE-USERNAME",
+	"YAHOO",
+	"AIM",
+	"ICQ",
+	"JABBER",
+	"MSN",
+	"CUSTOM("
 };
 
 struct SocialNetRecord : public VcfEntry {
 	std::string name;
 	std::string contact;
-	bool is_custom{ false };
 	inline bool is_empty() const override {
 		return contact.empty();
 	}
