@@ -7,9 +7,8 @@
 | Curves3D         | C++20 & STL, CMake, C++ Dynamic libraries|
 | UnRePit          | C++20 & STL, QT 6, Lua, WinForms, Google Tests, C++ Static Libraries|
 | VCF_Editor       | C17, Regex, C++20 & STL, C++ Boost, JSON & XML, PostgreSQL & libpqxx|
-| BuildingEscape   | Unreal Engine 5 C++                      |
-| ULabSortStat     | C++20 & STL, C++ Multithreading          |
-| CppQuizParser    | C++20 & STL, C++ Multithreading          |
+| BuildingEscape<br>SlidingPuzzle<br>DGMA_Task   | Unreal Engine 5 C++                      |
+| CppQuizParser<br>ULabSortStat     | C++20 & STL, C++ Multithreading          |
 | PBFTask          | C++20 & STL, C++ Multithreading, Linux Sockets|
 | ULabHTML&CSS     | HTML&CSS                                 |
 | FastSurferRunOnC#| C#, Docker                               |
