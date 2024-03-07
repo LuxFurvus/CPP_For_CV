@@ -1,0 +1,49 @@
+Part 01: Design a Database for a Clinic
+Conditions:
+
+•	There is an entity called 'doctor.'
+•	There is an entity called 'client.'
+•	A client books an appointment with a doctor at a specific time slot.
+•	A doctor's time slots are formed based on their working hours (which can change).
+The result should be a schema with relationships, implemented in any tool.
+
+*************************************************************************************
+
+Part 02: Implement Operations on an Element Tree
+Conditions:
+
+The task should be executed using Qt.
+Any operating system can be used.
+Task:
+•	Use the QTreeWidget component to build a tree;
+•	Each element of the tree should have 'id' and 'name' fields;
+•	Organize the reading and saving of the tree in a database (the choice of DB is yours);
+•	The tree can have unlimited depth;
+•	There should be the functions to delete, edit, and add nodes in the tree.
+The result should be the source code of the developed project.
+
+*************************************************************************************
+*************************************************************************************
+
+Часть 1: Спроектировать БД для клиники
+Условия:
+1. Есть сущность врач 
+2. Есть сущность клиент 
+3. Клиент записывается на прием к врачу в определенный слот (время) 
+4. У врача слоты формируются в зависимости от его времени работы (может меняться) 
+Результатом должна быть схема со связями реализованная в любом инструменте 
+
+*************************************************************************************
+
+Часть 2: Реализовать работу с деревом элементов
+Условия: 
+1. Задание выполняется с использованием Qt
+2. ОС любая
+Задание:
+1. Использовать компонент QTreeWidget для построения дерева;
+2. Каждый элемент дерева имеет поля id и name;
+3. Организовать чтение и сохранение дерева в базу данных (выбор СУБД за Вами);
+4. Дерево может быть неограниченной вложенности;
+5. Должна быть возможность удаления, редактирования и добавления узлов в дерево;
+
+Результатом работы должен быть исходный код разработанного проекта
