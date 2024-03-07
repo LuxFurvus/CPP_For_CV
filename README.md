@@ -1,6 +1,6 @@
 
 
-# Skill and relevant projects:
+# Skills and relevant projects:
 
 | Skill                       | Projects                            |
 |-----------------------------|-------------------------------------|
