@@ -156,14 +156,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="vcfe_data_containers.hpp" />
+    <ClInclude Include="vcfe_db_settings.hpp" />
     <ClInclude Include="vcfe_decode_from_hex.h" />
     <ClInclude Include="vcfe_encode_to_hex.h" />
+    <ClInclude Include="vcfe_pgdb_handler.hpp" />
     <ClInclude Include="vcfe_ptree_parser.hpp" />
     <ClInclude Include="vcfe_serializer.h" />
     <ClInclude Include="vcfe_vcf_printer.hpp" />
     <ClInclude Include="vcfe_vcf_parser.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ARCHIVE.cpp" />
+    <ClCompile Include="vcfe_db_settings.cpp" />
     <ClCompile Include="vcfe_decode_from_hex.c" />
     <ClCompile Include="vcfe_encode_to_hex.c" />
     <ClCompile Include="vcfe_main.cpp" />
@@ -173,11 +177,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="AAA.vcf" />
-    <None Include="OUTPUT_CARDS.json" />
-    <None Include="OUTPUT_CARDS.vcf" />
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="OUTPUT_CARDS.xml" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

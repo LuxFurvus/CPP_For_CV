@@ -3,39 +3,37 @@
 
 #include <iostream>
 #include <string>
-#include <pqxx/pqxx>
-#include <cstdarg>
 
 #include "vcfe_serializer.h"
-/*
-*/
-////////////////
-// запрос на создание таблиц контактов
-// функция на перевод данных из таблиц в программу
-// функция на перевод данных из программы в таблицы
-
-
-class PGDBHandler {
-public:
-
-};
+#include "vcfe_db_settings.hpp"
+#include "vcfe_pgdb_handler.hpp"
 
 #ifdef OOOOOO
-
 #endif
 
 int main() {
 	system("chcp 65001 >NUL");
-	std::vector<ContactData> cards;
 
-	const std::string input_file { "AAA.vcf" };
-	const std::string output_file{ "OUTPUT_CARDS" };
+	DB_ConnectSettings set;
+	set.parse_settings("DBSettings.txt");
+
+	PG_DB_Handler pdb(set.get_settings(true));
+
+	QueryTask task_drop_tables{ "DropTables.sql" , "All tables dropped!" };
+	pdb.execute_query_from_file(task_drop_tables);
+	
+	QueryTask task_make_tables{ "CreateTables.sql" , "All tables created!" };
+	pdb.execute_query_from_file(task_make_tables);
+
+	const std::string input_file{ "AAA.vcf" };
 
 	ContactSerializer cas;
 	cas.parse_file(input_file);
-	cas.print_to_file(output_file, FileExtension::JSON);
-	cas.print_to_file(output_file, FileExtension::XML);
-	cas.print_to_file(output_file, FileExtension::VCF);
+
+	pdb.put_contacts_in_db(cas.get_all_contacts());
+
+
+
 
 	return 0;
 }

@@ -1,13 +1,5 @@
-DROP TABLE IF EXISTS RelationRecords;
-DROP TABLE IF EXISTS SocialNetRecords;
-DROP TABLE IF EXISTS EventRecords;
-DROP TABLE IF EXISTS NoteRecords;
-DROP TABLE IF EXISTS UrlRecords;
-DROP TABLE IF EXISTS WorkInfoRecords;
-DROP TABLE IF EXISTS AddressRecords;
-DROP TABLE IF EXISTS EmailRecords;
-DROP TABLE IF EXISTS TelephoneRecords;
-DROP TABLE IF EXISTS NickNameRecords;
-DROP TABLE IF EXISTS PhoneticRecords;
-DROP TABLE IF EXISTS NameRecords;
-DROP TABLE IF EXISTS Contacts;
+BEGIN;
+
+DROP TABLE IF EXISTS Relations, SocialNets, Events, Notes, Urls, WorkInfos, Addresses, Emails, Telephones, Nicknames, Phonetics, Names, Contacts;
+
+COMMIT;
