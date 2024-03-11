@@ -42,15 +42,15 @@ private:
 	void get_name_records(pqxx::work& W, int contact_id, NameRecord& name_records);
 	void get_phonetic_record(pqxx::work& W, int contact_id, PhoneticRecord& phonetic_record);
 	void get_nickname_record   (pqxx::work& W, int contact_id, NickNameRecord& nickname_record);
-	//void get_workinfo_record   (pqxx::work& W, int contact_id, WorkInfoRecord& workinfo_record);
-	//void get_note_record       (pqxx::work& W, int contact_id, NoteRecord&     note_record);
-	//void get_telephone_records (pqxx::work& W, int contact_id, std::vector<TelephoneRecord>& telephone_records);
-	//void get_email_records     (pqxx::work& W, int contact_id, std::vector<EmailRecord>& email_records);
-	//void get_address_records   (pqxx::work& W, int contact_id, std::vector<AddressRecord>& address_records);
-	//void get_url_records       (pqxx::work& W, int contact_id, std::vector<UrlRecord>& url_records);
-	//void get_event_records     (pqxx::work& W, int contact_id, std::vector<EventRecord>& event_records);
-	//void get_social_net_records(pqxx::work& W, int contact_id, std::vector<SocialNetRecord>& social_net_records);
-	//void get_relation_records  (pqxx::work& W, int contact_id, std::vector<RelationRecord>& relation_records);
+	void get_workinfo_record   (pqxx::work& W, int contact_id, WorkInfoRecord& workinfo_record);
+	void get_note_record       (pqxx::work& W, int contact_id, NoteRecord&     note_record);
+	void get_telephone_records (pqxx::work& W, int contact_id, std::vector<TelephoneRecord>& telephone_records);
+	void get_email_records     (pqxx::work& W, int contact_id, std::vector<EmailRecord>& email_records);
+	void get_address_records   (pqxx::work& W, int contact_id, std::vector<AddressRecord>& address_records);
+	void get_url_records       (pqxx::work& W, int contact_id, std::vector<UrlRecord>& url_records);
+	void get_event_records     (pqxx::work& W, int contact_id, std::vector<EventRecord>& event_records);
+	void get_social_net_records(pqxx::work& W, int contact_id, std::vector<SocialNetRecord>& social_net_records);
+	void get_relation_records  (pqxx::work& W, int contact_id, std::vector<RelationRecord>& relation_records);
 
 	// Utility function to fetch contact IDs
 	const std::vector<int> get_all_ids(pqxx::work& W);
@@ -368,15 +368,15 @@ void PG_DB_Handler::get_contacts_from_db(std::vector<ContactData>& contacts) {
 		get_name_records(W, id, data.names);
 		get_phonetic_record(W, id, data.phonetic_name);
 		get_nickname_record(W, id, data.nickname);
-		//get_telephone_records(W, id, data.telephones);
-		//get_email_records(W, id, data.emails);
-		//get_address_records(W, id, data.addresses);
-		//get_workinfo_record(W, id, data.workinfo);
-		//get_url_records(W, id, data.urls);
-		//get_note_record(W, id, data.note);
-		//get_event_records(W, id, data.events);
-		//get_social_net_records(W, id, data.socials);
-		//get_relation_records(W, id, data.relations);
+		get_workinfo_record(W, id, data.workinfo);
+		get_note_record(W, id, data.note);
+		get_telephone_records(W, id, data.telephones);
+		get_email_records(W, id, data.emails);
+		get_address_records(W, id, data.addresses);
+		get_url_records(W, id, data.urls);
+		get_event_records(W, id, data.events);
+		get_social_net_records(W, id, data.socials);
+		get_relation_records(W, id, data.relations);
 		contacts.push_back(data);
 	}
 }
@@ -415,6 +415,142 @@ void PG_DB_Handler::get_nickname_record(pqxx::work& W, int contact_id, NickNameR
 	auto fill_records = [&](pqxx::result& r) {
 		const auto& row = r[0];
 		nickname_record.nick = row["nick"].c_str();
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_workinfo_record(pqxx::work& W, int contact_id, WorkInfoRecord& workinfo_record) {
+	const std::string query = "SELECT company, department, title FROM workinfos WHERE contact_id = " + W.quote(contact_id) + ";";
+
+	auto fill_records = [&](pqxx::result& r) {
+		const auto& row = r[0];
+		workinfo_record.company = row["company"].c_str();
+		workinfo_record.department = row["department"].c_str();
+		workinfo_record.title = row["title"].c_str();
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_note_record(pqxx::work& W, int contact_id, NoteRecord& note_record) {
+	const std::string query = "SELECT note_text FROM notes WHERE contact_id = " + W.quote(contact_id) + ";";
+
+	auto fill_records = [&](pqxx::result& r) {
+		const auto& row = r[0];
+		note_record.note_text = row["note_text"].c_str();
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_telephone_records(pqxx::work& W, int contact_id, std::vector<TelephoneRecord>& telephone_records) {
+	const std::string query = "SELECT tel_type, tel_number FROM telephones WHERE contact_id = " + W.quote(contact_id).append(";");
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			TelephoneRecord record;
+			record.type = row["tel_type"].c_str();
+			record.number = row["tel_number"].c_str();
+			telephone_records.push_back(record);
+		}
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_email_records(pqxx::work& W, int contact_id, std::vector<EmailRecord>& email_records) {
+	const std::string query = "SELECT email_type, address FROM emails WHERE contact_id = " + W.quote(contact_id).append(";");
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			EmailRecord record;
+			record.type = row["email_type"].c_str();
+			record.address = row["address"].c_str();
+			email_records.push_back(record);
+		}
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_address_records(pqxx::work& W, int contact_id, std::vector<AddressRecord>& address_records) {
+	const std::string query = "SELECT address_type, street, city, region, mail_index, country FROM addresses WHERE contact_id = " + W.quote(contact_id).append(";");
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			AddressRecord record;
+			record.type = row["address_type"].c_str();
+			record.street = row["street"].c_str();
+			record.city = row["city"].c_str();
+			record.region = row["region"].c_str();
+			record.index = row["mail_index"].c_str();
+			record.country = row["country"].c_str();
+			address_records.push_back(record);
+		}
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_url_records(pqxx::work& W, int contact_id, std::vector<UrlRecord>& url_records) {
+	const std::string query = "SELECT url_address FROM urls WHERE contact_id = " + W.quote(contact_id) + ";";
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			UrlRecord record;
+			record.url_address = row["url_address"].c_str();
+			url_records.push_back(record);
+		}
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_event_records(pqxx::work& W, int contact_id, std::vector<EventRecord>& event_records) {
+	const std::string query = "SELECT event_name, event_day, event_month, event_year, event_type FROM events WHERE contact_id = " + W.quote(contact_id) + ";";
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			EventRecord record;
+			record.event_name = row["event_name"].c_str();
+			record.day = row["event_day"].c_str();
+			record.month = row["event_month"].c_str();
+			record.year = row["event_year"].c_str();
+			record.event_type = static_cast<EventType>(row["event_type"].as<int>());
+			event_records.push_back(record);
+		}
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_social_net_records(pqxx::work& W, int contact_id, std::vector<SocialNetRecord>& social_net_records) {
+	const std::string query = "SELECT sns_name, sns_contact FROM socialnets WHERE contact_id = " + W.quote(contact_id) + ";";
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			SocialNetRecord record;
+			record.name = row["sns_name"].c_str();
+			record.contact = row["sns_contact"].c_str();
+			social_net_records.push_back(record);
+		}
+		};
+
+	saferun_get_query(W, __FUNCTION__, query, fill_records);
+}
+
+void PG_DB_Handler::get_relation_records(pqxx::work& W, int contact_id, std::vector<RelationRecord>& relation_records) {
+	const std::string query = "SELECT rel_name, rel_typename, rel_typenum FROM relations WHERE contact_id = " + W.quote(contact_id) + ";";
+
+	auto fill_records = [&](pqxx::result& r) {
+		for (auto row : r) {
+			RelationRecord record;
+			record.name = row["rel_name"].c_str();
+			record.type_name = row["rel_typename"].c_str();
+			record.type_num = row["rel_typenum"].as<int>();
+			relation_records.push_back(record);
+		}
 		};
 
 	saferun_get_query(W, __FUNCTION__, query, fill_records);

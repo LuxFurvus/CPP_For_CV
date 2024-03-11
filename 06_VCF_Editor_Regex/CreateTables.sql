@@ -44,7 +44,7 @@ CREATE TABLE Telephones (
 CREATE TABLE Emails (
     Email_ID SERIAL PRIMARY KEY,
     Contact_ID INT NOT NULL,
-    Email_Type VARCHAR(255),
+    email_type VARCHAR(255),
     Address VARCHAR(255),
     FOREIGN KEY (Contact_ID) REFERENCES Contacts(Contact_ID)
 );
@@ -52,7 +52,7 @@ CREATE TABLE Emails (
 CREATE TABLE Addresses (
     Address_ID SERIAL PRIMARY KEY,
     Contact_ID INT NOT NULL,
-    Address_Type VARCHAR(255),
+    address_type VARCHAR(255),
     Street VARCHAR(255),
     City VARCHAR(255),
     Region VARCHAR(255),
