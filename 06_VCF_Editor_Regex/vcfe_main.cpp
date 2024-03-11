@@ -19,21 +19,20 @@ int main() {
 
 	PG_DB_Handler pdb(set.get_settings(true));
 
-	QueryTask task_drop_tables{ "DropTables.sql" , "All tables dropped!" };
-	pdb.execute_query_from_file(task_drop_tables);
+	//QueryTask task_drop_tables{ "DropTables.sql" , "All tables dropped!" };
+	//pdb.execute_query_from_file(task_drop_tables);
 	
-	QueryTask task_make_tables{ "CreateTables.sql" , "All tables created!" };
-	pdb.execute_query_from_file(task_make_tables);
+	//QueryTask task_make_tables{ "CreateTables.sql" , "All tables created!" };
+	//pdb.execute_query_from_file(task_make_tables);
 
-	const std::string input_file{ "AAA.vcf" };
+	//const std::string input_file{ "AAA.vcf" };
 
 	ContactSerializer cas;
-	cas.parse_file(input_file);
+	//cas.parse_file(input_file);
+	//pdb.put_contacts_in_db(cas.get_all_contacts());
 
-	pdb.put_contacts_in_db(cas.get_all_contacts());
-
-
-
+	pdb.get_contacts_from_db(cas.get_all_contacts());
+	cas.print_to_console(FileExtension::VCF);
 
 	return 0;
 }

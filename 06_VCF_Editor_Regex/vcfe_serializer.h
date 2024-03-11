@@ -16,7 +16,7 @@ class ContactSerializer {
 	std::vector<ContactData> cards;
 	mutable PropertyTreeSerializer ptree_handler;
 public:
-	const std::vector<ContactData>& get_all_contacts() const {
+	std::vector<ContactData>& get_all_contacts() {
 		return cards;
 	}
 	void parse_file(const std::string& filename) {
