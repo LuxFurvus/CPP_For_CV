@@ -161,6 +161,7 @@
     <ClInclude Include="vcfe_encode_to_hex.h" />
     <ClInclude Include="vcfe_pgdb_handler.hpp" />
     <ClInclude Include="vcfe_ptree_parser.hpp" />
+    <ClInclude Include="vcfe_qt_json_parser.hpp" />
     <ClInclude Include="vcfe_serializer.h" />
     <ClInclude Include="vcfe_vcf_printer.hpp" />
     <ClInclude Include="vcfe_vcf_parser.hpp" />
@@ -171,6 +172,7 @@
     <ClCompile Include="vcfe_decode_from_hex.c" />
     <ClCompile Include="vcfe_encode_to_hex.c" />
     <ClCompile Include="vcfe_main.cpp" />
+    <ClCompile Include="vcfe_pgdb_handler.cpp" />
     <ClCompile Include="vcfe_ptree_parser.cpp" />
     <ClCompile Include="vcfe_vcf_printer.cpp" />
     <ClCompile Include="vcfe_vcf_parser.cpp" />
