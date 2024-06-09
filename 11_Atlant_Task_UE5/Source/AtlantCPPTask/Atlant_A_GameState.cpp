@@ -10,8 +10,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Engine/SkeletalMesh.h"
-//UKismetSystemLibrary::PrintString(GEngine->GetWorld(), "Lo=lo", 1, 0, FLinearColor::Green, 2.0f);
-	//UKismetSystemLibrary::PrintString(GetWorld(), FString::Printf(TEXT("CurrentItemType = %d"), static_cast<int32>(CurrentItemType)), true, true, FLinearColor::Blue, 9.0f);
 
 AAtlant_A_GameState::AAtlant_A_GameState()
 {
