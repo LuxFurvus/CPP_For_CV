@@ -47,7 +47,7 @@ public:
         return PropertyOwner != nullptr && PropertyItem != nullptr;
     }
 
-    // Retrieves the constant property value
+    // Retrieves the copy of property value
     template <typename Type>
     Type GetTypedValue() const {
         if (PropertyOwner == nullptr || PropertyItem == nullptr) {
@@ -96,7 +96,7 @@ private:
 
     static inline std::shared_ptr<PropertyMediator> Core = nullptr;
 
-    // Now stores a vector of PropertyPack entries for each PropertyId
+    // Stores a vector of PropertyPack entries for each PropertyId
     std::unordered_map<std::string, std::vector<PropertyPack>> PropertyLedger;
 
 private:

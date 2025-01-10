@@ -10,14 +10,15 @@ private:
     int PrivateMutableInt = 100;
     const int PrivateConstInt = 5;
     static inline int Counter = 0;
+    int OwnNumber = -1;
 public:
     std::string PublicString = "PublicString";
 
     PropertyTester()
     {
-        ++Counter;
-        PrivateMutableInt += Counter;
-        PublicString.append(Counter, '*');
+        OwnNumber = ++Counter;
+        PrivateMutableInt += OwnNumber;
+        PublicString.append(OwnNumber, '*');
 
         bool IsPropertyAdded = false;
         IsPropertyAdded = PropertyMediator::Get()->AddProperty("PrivateMutableInt", this, &PrivateMutableInt, false);
@@ -49,19 +50,25 @@ class FunctionTester {
 
 private:
 
+    static inline int ObjectCounter = 0;
+
+    int PersonalNumber;
+
     void PrivateFunctionWithRef(const std::string& message) {
-        printf("PrivateFunctionWithRef called with message: %s \n", message.c_str());
+        printf("PrivateFunctionWithRef [ %d ] called with message: %s \n", PersonalNumber, message.c_str());
     }
 
 
     void PrivateFunctionNoRef(const std::string message) {
-        printf("PrivateFunctionNoRef called with message: %s \n", message.c_str());
+        printf("PrivateFunctionNoRef [ %d ] called with message: %s \n", PersonalNumber, message.c_str());
     }
 
 public:
     // Constructor that binds the private function to the mediator
     FunctionTester()
     {
+        PersonalNumber = ++ObjectCounter;
+
         EventMediator::Get()->AddEvent("PrivateFunctionWithRef", this, &FunctionTester::PrivateFunctionWithRef);
         EventMediator::Get()->AddEvent("PrivateFunctionNoRef", this, &FunctionTester::PrivateFunctionNoRef);
     }
@@ -73,12 +80,12 @@ public:
 
     // Public method to demonstrate additional functionality
     void NonConstFunction(int value) {
-        std::cout << "Non-const function called with value: " << value << "\n";
+        std::cout << "Non-const function from [ " << PersonalNumber << " ] called with value: " << value << "\n";
     }
 
     std::string ConstFunction() const {
         std::string Message("Hello from Const function!");
-        std::cout << Message << "\n";
+        std::cout << Message << " from [ " << PersonalNumber << " ] \n";
         return Message;
     }
 };
@@ -87,18 +94,14 @@ void EventMediatorTestFunction()
 {
     const std::shared_ptr<EventMediator> EventMed = EventMediator::Get();
     FunctionTester TestObject;
-    FunctionTester TestObjectAnother;
     FunctionTester* HeapTestObject = new FunctionTester();
 
-    /////////////
+    /////////////////
 
     bool bNewEventAdded = false;
 
     // Add a non-const member function to the event
     bNewEventAdded = EventMed->AddEvent("EventID1", &TestObject, &FunctionTester::NonConstFunction);
-    assert(bNewEventAdded);
-
-    bNewEventAdded = EventMed->AddEvent("EventID1", &TestObjectAnother, &FunctionTester::NonConstFunction);
     assert(bNewEventAdded);
 
     bNewEventAdded = EventMed->AddEvent("EventID1", HeapTestObject, &FunctionTester::NonConstFunction);
@@ -107,13 +110,9 @@ void EventMediatorTestFunction()
     bNewEventAdded = EventMed->AddEvent("EventID2", &TestObject, &FunctionTester::ConstFunction);
     assert(bNewEventAdded);
 
-    bNewEventAdded = EventMed->AddEvent("EventID2", &TestObjectAnother, &FunctionTester::ConstFunction);
-    assert(bNewEventAdded);
-
     bNewEventAdded = EventMed->AddEvent("EventID2", HeapTestObject, &FunctionTester::ConstFunction);
     assert(bNewEventAdded);
 
-    delete HeapTestObject;
     /////////////
 
     // Call the non-const event
@@ -121,6 +120,9 @@ void EventMediatorTestFunction()
 
     // Call the const event
     EventMed->CallEvent("EventID2");
+
+    delete HeapTestObject;
+    printf("\n");
 
     // Call the private event
     EventMed->CallEvent("PrivateFunctionNoRef", std::string("Hello from private function"));
@@ -151,8 +153,9 @@ void PropertyMediatorTestFunction()
         printf("PrivateMutableInt = %d\n", PrivateMutableIntCopy);
 
         *PrivateMutableIntPtr = *PrivateMutableIntPtr * 2;
-        printf("PrivateMutableInt Updated = %d\n\n", Tester.GetPrivateMutableInt());
     }
+    printf("PrivateMutableInt Updated = %d\n", Tester.GetPrivateMutableInt());
+    printf("PrivateMutableInt Updated = %d\n\n", HeapTestObject->GetPrivateMutableInt());
 
     const auto StringPack = PropMed->GetProperty("PublicString");
 
