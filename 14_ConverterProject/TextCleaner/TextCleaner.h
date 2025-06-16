@@ -6,6 +6,8 @@
 
 class TextCleaner
 {
+    const int Number = 999;
+
     friend class TextCleaner_ExtractSubstringBetweenMarkers_Test;
 
     friend class TextCleaner_FindFirstSubstringInRange_Test;
@@ -56,14 +58,5 @@ class TextCleaner
     static void RemoveAllSubstringsFromMarkerTillDelimiter(std::string &Text, const std::string &Marker, const std::vector<std::string>& Delimiters);
 
     static void RemoveAllSubstringsFromAnyMarkerTillDelimiter(std::string& Text, const std::vector<std::string>& Markers, const std::vector<std::string>& Delimiters);
-
-////////////////////////////////////
-    public:
-////////////////////////////////////
-
-
-
-
-
 
 };

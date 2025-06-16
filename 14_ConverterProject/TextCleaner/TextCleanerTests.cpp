@@ -1121,6 +1121,11 @@ TEST(TextCleaner, RemoveSubstringStartingFromEndingWithBeforeDelimiter)
 
 TEST(TextCleaner, RemoveSubstringInRange)
 {
+    // Test empty string
+    {
+        EXPECT_EQ(TextCleaner().Number, 999);
+    }
+
     // Test normal case - removal in the middle
     {
         std::string Text = "Hello world";

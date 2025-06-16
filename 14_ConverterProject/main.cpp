@@ -1,74 +1,107 @@
 
+#include <format>
+#include <string>
 #include <iostream>
-#include <fstream>
-#include <sstream>
 #include <cassert>
 ////////
-// #include "TextAdapter.h"
-// #include "RemoveSubstrings.h"
+#include <sqlite3.h>
+////////
+#include "ConditionChecker/ConditionChecker.h"
+#include "SQLiteConnector/SQLiteConnector.h"
 
-// Function to validate command-line arguments and extract the file path
-bool ValidateArguments(int argc, char* argv[], std::string& filepath)
+namespace Invariants
 {
-    if (argc != 3 || std::string(argv[1]) != "-in")
+    constexpr const char* WayToDb = "northwind.db";
+};
+
+////////////////
+
+class SQLiteStatement
+{
+private:
+    sqlite3_stmt* StatementPtr = nullptr;
+    sqlite3* DbHandle = nullptr;
+    DbChecker Checker;
+
+public:
+    SQLiteStatement(sqlite3* DbHandleParam, const char* SqlQuery) : Checker(DbHandleParam)
     {
-        std::cerr << "Usage: program -in <filepath>\n";
-        return false;
-    }
-    filepath = argv[2];
-    return true;
-}
+        CONFIRM(DbHandleParam);
+        CONFIRM(SqlQuery);
 
-// Function to read the entire content of the file
-bool ReadFileContent(const std::string& filepath, std::string& content)
-{
-    std::ifstream file(filepath, std::ios::in);
-    if (!file)
+        DbHandle = DbHandleParam;
+        const int PrepareResult = sqlite3_prepare_v2(DbHandle, SqlQuery, -1, &StatementPtr, nullptr);
+        Checker.CheckResult(PrepareResult, "prepare");
+    }
+    ~SQLiteStatement()
     {
-        std::cerr << "Error: Cannot open file for reading: " << filepath << '\n';
-        return false;
+        const int FinalizeResult = sqlite3_finalize(StatementPtr);
+        Checker.CheckResult(FinalizeResult, "finalize");
     }
-
-    std::ostringstream buffer;
-    buffer << file.rdbuf();
-    content = buffer.str();
-    file.close();
-    return true;
-}
-
-// Function to overwrite the file with the new content
-bool OverwriteFileContent(const std::string& filepath, const std::string& content)
-{
-    std::ofstream file(filepath, std::ios::out | std::ios::trunc);
-    if (!file)
+    sqlite3_stmt* Get() const
     {
-        std::cerr << "Error: Cannot open file for writing: " << filepath << '\n';
-        return false;
+        CONFIRM(StatementPtr);
+        return StatementPtr;
     }
+    bool Step() const
+    {
+        const int StepResult = sqlite3_step(StatementPtr);
+        switch(StepResult)
+        {
+            case SQLITE_ROW:
+                return true;
+            case SQLITE_DONE:
+                return false;
+            default:
+                Checker.CheckResult(StepResult, "step");
+                return false;
+        }
+    }
+    void Reset() const
+    {
+        const int ResetResult = sqlite3_reset(StatementPtr);
+        Checker.CheckResult(ResetResult, "reset");
+    }
+};
 
-    file << content;
-    file.close();
-    return true;
-}
+////////////////
 
-int main(int argc, char* argv[])
+class SQLiteStatementExecutor
 {
-    std::string filepath;
-    assert(ValidateArguments(argc, argv, filepath));
+private:
+    const SQLiteStatement& Statement;
 
-    std::string text;
-    assert(ReadFileContent(filepath, text));
+public:
+    SQLiteStatementExecutor(const SQLiteStatement& InStatement) : Statement(InStatement)
+    {}
 
-    // Processing pipeline
+    std::vector<std::string> GetText() const
+    {
+        std::vector<std::string> ReturnStrings;
+
+        for (size_t i = 0; Statement.Step(); ++i)
+        {
+            const unsigned char* RawText = sqlite3_column_text(Statement.Get(), 0);
+            std::string ContactName = RawText ? reinterpret_cast<const char*>(RawText) : "";
+            ReturnStrings.push_back(ContactName);
+        }
+        return ReturnStrings;
+    }
+};
+
+void ReadFirstContactName()
+{
+    const DbConnection DbHandle(Invariants::WayToDb, true);
+
+    const SQLiteStatement Statement(DbHandle.Get(), "SELECT ContactName FROM Customers LIMIT 1;"); 
     
-    // TextAdapter TextAdapterObj;
-    // TextAdapterObj.AdaptText(text, false);
+    SQLiteStatementExecutor Executor(Statement);
 
-    // BlueprintLogicExtractor Extractor;
-    // Extractor.RefineCoreBlueprintLogic(text);
+    const std::vector<std::string> ContactName = Executor.GetText();
+    std::print(std::cout, "First contact name: {}\n", ContactName);
+}
 
-    assert(OverwriteFileContent(filepath, text));
-
-    std::cout << "File processed and overwritten successfully.\n";
-    return 0;
+int main()
+{ 
+    ReadFirstContactName();
 }
