@@ -14,55 +14,7 @@ namespace Invariants
     constexpr const char* WayToDb = "northwind.db";
 };
 
-////////////////
-
-class SQLiteStatement
-{
-private:
-    sqlite3_stmt* StatementPtr = nullptr;
-    sqlite3* DbHandle = nullptr;
-    DbChecker Checker;
-
-public:
-    SQLiteStatement(sqlite3* DbHandleParam, const char* SqlQuery) : Checker(DbHandleParam)
-    {
-        CONFIRM(DbHandleParam);
-        CONFIRM(SqlQuery);
-
-        DbHandle = DbHandleParam;
-        const int PrepareResult = sqlite3_prepare_v2(DbHandle, SqlQuery, -1, &StatementPtr, nullptr);
-        Checker.CheckResult(PrepareResult, "prepare");
-    }
-    ~SQLiteStatement()
-    {
-        const int FinalizeResult = sqlite3_finalize(StatementPtr);
-        Checker.CheckResult(FinalizeResult, "finalize");
-    }
-    sqlite3_stmt* Get() const
-    {
-        CONFIRM(StatementPtr);
-        return StatementPtr;
-    }
-    bool Step() const
-    {
-        const int StepResult = sqlite3_step(StatementPtr);
-        switch(StepResult)
-        {
-            case SQLITE_ROW:
-                return true;
-            case SQLITE_DONE:
-                return false;
-            default:
-                Checker.CheckResult(StepResult, "step");
-                return false;
-        }
-    }
-    void Reset() const
-    {
-        const int ResetResult = sqlite3_reset(StatementPtr);
-        Checker.CheckResult(ResetResult, "reset");
-    }
-};
+///////////////////////////////
 
 ////////////////
 

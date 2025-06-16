@@ -1,6 +1,7 @@
 MODULE_NAME := SQLiteConnector
 
 SRC_FILES := \
+	SQLiteConnector/SQLiteConnector.cpp \
 	SQLiteConnector/SQLiteConnectorTests.cpp
 
 DEP_MODULES :=
