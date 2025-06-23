@@ -6,207 +6,201 @@
 #include <string>
 #include <iostream>
 #include <unordered_set>
+#include <variant>
+#include <utility>
+#include <memory>
+#include <vector>
 ////////
 #include <sqlite3.h>
 ////////
 #include "../ConditionChecker/ConditionChecker.h"
 
-class DbChecker
+
+class SQLite_DbChecker
 {
     friend class SQLiteConnector_DbChecker_Test;
-private:
-    DbChecker() = delete;
+
+    SQLite_DbChecker() = delete;
+
 public:
-    static void CheckResult(sqlite3* DbHandle, const int ResultCode, const char* OperatonType);
+    static void CheckResult(const int ResultCode, const char *OperatonType);
+    static void CheckResult(sqlite3 *DbHandle, const int ResultCode, const char *OperatonType);
     static void WarnIfFalse(const bool Condition, const char* WarningMsg);
 };
 
+
 ///////////////////////////////
 
-class SQLiteStatement;
+
+class SQLite_Statement;
 
 class ConnectionSentinel
 {
-private:
-    mutable std::mutex Mutex;
-    std::unordered_set<SQLiteStatement*> ActiveStatements;
-
-public:
-    ConnectionSentinel() = default;
-    ~ConnectionSentinel();
-
     ConnectionSentinel(const ConnectionSentinel&) = delete;
     ConnectionSentinel& operator=(const ConnectionSentinel&) = delete;
+    ConnectionSentinel(ConnectionSentinel&&) = delete;
+    ConnectionSentinel& operator=(ConnectionSentinel&&) = delete;
 
-    void Register(SQLiteStatement* Statement);
-    void Unregister(SQLiteStatement* Statement);
+private:
+    mutable std::mutex Mutex;
+    std::unordered_set<SQLite_Statement*> ActiveStatements;
+
+public:
+    ConnectionSentinel() : Mutex(), ActiveStatements() {}
+    ~ConnectionSentinel();
+
+    void Register(SQLite_Statement* Statement);
+    void Unregister(SQLite_Statement* Statement);
 
     void InvalidateAll();
 };
 
+
 ///////////////////////////////
+
 
 struct StatementCreationKit
 {
-    friend class DbConnection;
+    friend class SQLite_DbConnection;
     friend class SQLiteConnector_ConnectionSentinel_Cases_Test;
+    
 private:
     StatementCreationKit(std::weak_ptr<ConnectionSentinel> Sentinel, sqlite3* DbHandle) : Sentinel(Sentinel), DbHandle(DbHandle) {}
+
 public:
     std::weak_ptr<ConnectionSentinel> Sentinel;
     sqlite3* DbHandle = nullptr;
+
+public:
+    StatementCreationKit(const StatementCreationKit&) = default;
+    StatementCreationKit& operator=(const StatementCreationKit&) = default;
+    StatementCreationKit(StatementCreationKit&&) noexcept = default;
+    StatementCreationKit& operator=(StatementCreationKit&&) noexcept = default;
 };
+
 
 ///////////////////////////////
 
-class DbConnection
+
+class SQLite_DbConnection
 {
-    friend class SQLiteConnector_DbConnection_Test;
+    friend class SQLite_DbConnection_T12_CorruptGetShouldCrash_Test;
+
+    SQLite_DbConnection() = delete;
+    SQLite_DbConnection(const SQLite_DbConnection&) = delete;
+    SQLite_DbConnection& operator=(const SQLite_DbConnection&) = delete;
+
+    SQLite_DbConnection(SQLite_DbConnection&&) = delete;
+    SQLite_DbConnection& operator=(SQLite_DbConnection&&) = delete;
+
 private:
     sqlite3* DbHandle = nullptr;
     std::shared_ptr<ConnectionSentinel> Sentinel;
 
+private:
+    void SetupConnection(const char* WayToDb, const bool IsReadOnly, const bool EnableSentinel);
+
 public:
+    SQLite_DbConnection(const char* WayToDb, const bool IsReadOnly, const bool EnableSentinel = true);
+    ~SQLite_DbConnection();
 
-    DbConnection(const char* WayToDb, const bool IsReadOnly, bool EnableSentinel = true)
-    {
-        CONFIRM(WayToDb);
-        const int OpenFlags = IsReadOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE;
-        const int AllFlags = OpenFlags | SQLITE_OPEN_EXRESCODE | SQLITE_OPEN_FULLMUTEX;
-        const int OpenResult = sqlite3_open_v2(WayToDb, &DbHandle, AllFlags, nullptr);
-        DbChecker::CheckResult(DbHandle, OpenResult, "open database");
-
-        if (!EnableSentinel) return;
-        Sentinel = std::make_shared<ConnectionSentinel>();
-    }
-    ~DbConnection()
-    {
-        if (Sentinel) Sentinel->InvalidateAll();
-        const int CloseResult = sqlite3_close(DbHandle);
-        DbChecker::CheckResult(DbHandle, CloseResult, "close database");
-    }
-    sqlite3* Get() const
-    {
-        CONFIRM(DbHandle);
-        return DbHandle;
-    }
-    StatementCreationKit MakeStatementKit() const
-    {
-        return StatementCreationKit{ Sentinel, DbHandle };
-    }
+    sqlite3* Get() const;
+    StatementCreationKit MakeStatementKit() const;
 };
+
 
 ///////////////////////////////
 
-class SQLiteStatement
+
+class SQLite_Statement
 {
     friend class ConnectionSentinel;
-    friend class SQLiteConnector_SQLiteStatement_Test;
+    friend class SQLite_Statement_T01_UnusedTailNullOrEmpty_NoWarning_Test;
+    friend class SQLite_Statement_T02_UnusedTailPresent_ShouldWarn_Test;
     friend class SQLiteConnector_ConnectionSentinel_Cases_Test;
+
+    SQLite_Statement(const SQLite_Statement&) = delete;
+    SQLite_Statement& operator=(const SQLite_Statement&) = delete;
+
+    SQLite_Statement(SQLite_Statement&& Other) noexcept = delete;
+    SQLite_Statement& operator=(SQLite_Statement&& Other) noexcept = delete;
+
 private:
     sqlite3* DbHandle = nullptr;
     sqlite3_stmt* StatementPtr = nullptr;
     std::weak_ptr<ConnectionSentinel> Sentinel;
 
 private:
-
-    static void WarnOnUnusedTail(const char* UnusedTail)
-    {
-        const bool NoUnusedTail = UnusedTail == nullptr || strlen(UnusedTail) == 0;
-        if (NoUnusedTail) return;
-        const std::string UnusedTailMsg = std::format("Unused tail [{}]: {}", strlen(UnusedTail), UnusedTail);
-        DbChecker::WarnIfFalse(NoUnusedTail, UnusedTailMsg.c_str());
-    }
-
-    void FinalizeFromSentinel()
-    {
-        if (!IsValid()) return;
-        sqlite3_finalize(StatementPtr);
-        StatementPtr = nullptr;
-        DbHandle = nullptr;
-    }
-
-    void PrepareStatement(sqlite3* DbHandleParam, const char* SqlQuery)
-    {
-        DbHandle = DbHandleParam;
-        const char* UnusedTail = nullptr;
-        const int PrepareResult = sqlite3_prepare_v2(DbHandleParam, SqlQuery, -1, &StatementPtr, &UnusedTail);
-        DbChecker::CheckResult(DbHandle, PrepareResult, "prepare");
-        WarnOnUnusedTail(UnusedTail);
-    }
-
-    void RegisterInSentinel(std::weak_ptr<ConnectionSentinel> Sentinel)
-    {
-        std::shared_ptr<ConnectionSentinel> SharedSentinel = Sentinel.lock();
-        if (!SharedSentinel) return;
-        SharedSentinel->Register(this);
-    }
-
-    void UnRegisterFromSentinel()
-    {
-        std::shared_ptr<ConnectionSentinel> SharedSentinel = Sentinel.lock();
-        if (!SharedSentinel) return;
-        SharedSentinel->Unregister(this);        
-    }
+    static void WarnOnUnusedTail(const char* UnusedTail);
+    void FinalizeFromSentinel();
+    void PrepareStatement(sqlite3* DbHandleParam, const char* SqlQuery);
+    void RegisterInSentinel(std::weak_ptr<ConnectionSentinel> Sentinel);
+    void UnRegisterFromSentinel();
 
 public:
-    SQLiteStatement(sqlite3* DbHandleParam, const char* SqlQuery)
-    {
-        CONFIRM(DbHandleParam);
-        CONFIRM(SqlQuery);
-        PrepareStatement(DbHandleParam, SqlQuery);
-    }
+    SQLite_Statement(sqlite3* DbHandleParam, const char* SqlQuery);
+    SQLite_Statement(const StatementCreationKit& Kit, const char* SqlQuery);
 
-    SQLiteStatement(const StatementCreationKit& Kit, const char* SqlQuery)
-        : SQLiteStatement(Kit.DbHandle, SqlQuery)
-    {
-        Sentinel = Kit.Sentinel;
-        RegisterInSentinel(Sentinel);
-    }
-    
-    ~SQLiteStatement()
-    {
-        UnRegisterFromSentinel();
-        if (StatementPtr == nullptr) return;
-        const int FinalizeResult = sqlite3_finalize(StatementPtr);
-        DbChecker::CheckResult(DbHandle, FinalizeResult, "finalize");
-        StatementPtr = nullptr;
-        DbHandle = nullptr;
-    }
+    ~SQLite_Statement();
 
-    bool IsValid() const
-    {
-        return StatementPtr != nullptr && DbHandle != nullptr;
-    }
-
-    sqlite3_stmt* Get() const
-    {
-        if (!IsValid()) return nullptr;
-        CONFIRM(StatementPtr);
-        return StatementPtr;
-    }
-
-    bool Step() const
-    {
-        if (!IsValid()) return false;
-        const int StepResult = sqlite3_step(StatementPtr);
-        switch(StepResult)
-        {
-            case SQLITE_ROW:
-                return true;
-            case SQLITE_DONE:
-                return false;
-            default:
-                DbChecker::CheckResult(DbHandle, StepResult, "step");
-                return false;
-        }
-    }
-    void Reset() const
-    {
-        if (!IsValid()) return;
-        const int ResetResult = sqlite3_reset(StatementPtr);
-        DbChecker::CheckResult(DbHandle, ResetResult, "reset");
-    }
+    sqlite3_stmt* Get() const;
+    bool IsValid() const;
+    bool Step() const;
+    void Reset() const;
 };
+
+
+///////////////////
+
+
+struct SQLiteParamVisitor
+{
+    SQLiteParamVisitor() = delete;
+
+private:
+    sqlite3_stmt* Statement;
+    int ParamIndex;
+
+public:
+    SQLiteParamVisitor(sqlite3_stmt* Statement, const int ParamIndex);
+
+    int operator()(const int64_t Value) const;
+    int operator()(const int Value) const;
+    int operator()(const double Value) const;
+    int operator()(const std::string& Value) const;
+    int operator()(std::nullptr_t) const;
+};
+
+
+///////////////////
+
+
+using BindableValue = std::variant<int64_t, double, std::string, std::nullptr_t>;
+using BindablePair = std::pair<std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>;
+
+class SQLite_ParamValidator
+{
+    friend class SQLite_NamedParamBinder;
+private:
+    static std::string NormalizeParamName(const std::string& Name);
+    static std::unordered_set<std::string> GetParamNames(const std::vector<BindablePair>& NamedValues);
+    static void CheckForParamNamePresence(sqlite3_stmt* Statement, const std::unordered_set<std::string>& ParamNames);
+    static void ValidateParamNames(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues);    
+};
+
+class SQLite_NamedParamBinder
+{
+private:
+    static void PrepareStatementForBinding(sqlite3_stmt* Statement);
+    static int BindOneParam(sqlite3_stmt* Statement, int ParamIndex, const BindableValue& Value);
+    static void ApplyBindablePairsToStatement(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues);
+
+public:
+    static void BindParamsByName(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues);
+};
+
+
+///////////////////
+
 
 #endif // SQLITE_CONNECTOR_H

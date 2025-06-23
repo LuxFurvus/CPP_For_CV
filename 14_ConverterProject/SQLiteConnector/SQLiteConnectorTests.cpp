@@ -11,524 +11,9 @@
 
 // #define EXAMINE_MEMORY_LEAK_WITHOUT_ConnectionSentinel
 
-//////////////////////////////////////////////
-//          Unified Test Container
-//////////////////////////////////////////////
-
-TEST(SQLiteConnector, DbChecker)
-{
-    const auto CreateInMemoryDb = []()
-    {
-        sqlite3* Db = nullptr;
-        EXPECT_EQ(sqlite3_open(":memory:", &Db), SQLITE_OK);
-        sqlite3_extended_result_codes(Db, 1); // Enable extended error codes
-        return Db;
-    };
-
-    //////////////////////////////////////////////
-    //              Normal Cases
-    //////////////////////////////////////////////
-    {
-        SCOPED_TRACE("CheckResult with SQLITE_OK should succeed");
-
-        sqlite3* Db = CreateInMemoryDb();
-        ASSERT_NO_FATAL_FAILURE(DbChecker::CheckResult(Db, SQLITE_OK, "no-op"));
-        sqlite3_close(Db);
-    }
-
-    //////////////////////////////////////////////
-    //              Edge Cases
-    //////////////////////////////////////////////
-    {
-        SCOPED_TRACE("CheckResult with long operation name (format + utf8)");
-
-        sqlite3* Db = CreateInMemoryDb();
-
-        // Force an error
-        const char* InvalidSQL = "INVALID SQL!";
-        sqlite3_exec(Db, InvalidSQL, nullptr, nullptr, nullptr);
-
-        ASSERT_DEATH(DbChecker::CheckResult(Db, SQLITE_ERROR, "execute_invalid_sql_with_long_name"), ".*");
-        sqlite3_close(Db);
-    }
-
-    //////////////////////////////////////////////
-    //             Invalid Inputs
-    //////////////////////////////////////////////
-    {
-        SCOPED_TRACE("CheckResult with nullptr as operation type");
-
-        sqlite3* Db = CreateInMemoryDb();
-
-        sqlite3_exec(Db, "BAD;", nullptr, nullptr, nullptr);
-
-        const char* Op = nullptr;
-        ASSERT_DEATH(DbChecker::CheckResult(Db, SQLITE_ERROR, Op), ".*");
-        sqlite3_close(Db);
-    }
-
-    //////////////////////////////////////////////
-    //             Empty Structures
-    //////////////////////////////////////////////
-    {
-        SCOPED_TRACE("CheckResult with empty string as operation type");
-
-        sqlite3* Db = CreateInMemoryDb();
-
-        sqlite3_exec(Db, "INVALID!", nullptr, nullptr, nullptr);
-
-        ASSERT_DEATH(DbChecker::CheckResult(Db, SQLITE_ERROR, ""), ".*");
-        sqlite3_close(Db);
-    }
-
-    //////////////////////////////////////////////
-    //        Maximums and Minimums
-    //////////////////////////////////////////////
-    {
-        SCOPED_TRACE("CheckResult with INT_MAX as result code");
-
-        sqlite3* Db = CreateInMemoryDb();
-
-        ASSERT_DEATH(DbChecker::CheckResult(Db, INT_MAX, "overflow"), ".*");
-        sqlite3_close(Db);
-    }
-
-    {
-        SCOPED_TRACE("CheckResult with INT_MIN as result code");
-
-        sqlite3* Db = CreateInMemoryDb();
-
-        ASSERT_DEATH(DbChecker::CheckResult(Db, INT_MIN, "underflow"), ".*");
-        sqlite3_close(Db);
-    }
-
-    //////////////////////////////////////////////
-    //         Extended Result Code Cases
-    //////////////////////////////////////////////
-    {
-        SCOPED_TRACE("CheckResult with extended error code (e.g. SQLITE_IOERR)");
-
-        sqlite3* Db = nullptr;
-        // Force failure: opening invalid path
-        int rc = sqlite3_open("/invalid/path/to.db", &Db);
-        ASSERT_NE(rc, SQLITE_OK);
-        sqlite3_extended_result_codes(Db, 1);
-
-        ASSERT_DEATH(DbChecker::CheckResult(Db, rc, "open_invalid_path"), ".*");
-        sqlite3_close(Db);
-    }
-
-    {
-        SCOPED_TRACE("CheckResult with SQLITE_CONSTRAINT_NOTNULL (extended)");
-
-        sqlite3* Db = CreateInMemoryDb();
-
-        const char* Schema = "CREATE TABLE T (Id INTEGER PRIMARY KEY, Name TEXT NOT NULL);";
-        const char* InsertFail = "INSERT INTO T (Id) VALUES (1);";
-
-        sqlite3_exec(Db, Schema, nullptr, nullptr, nullptr);
-        sqlite3_exec(Db, InsertFail, nullptr, nullptr, nullptr); // Should fail on NOT NULL
-
-        ASSERT_DEATH(DbChecker::CheckResult(Db, SQLITE_CONSTRAINT, "insert_violate_notnull"), ".*");
-        sqlite3_close(Db);
-    }
-
-    //////////////////////////////////////////////
-    //              WarnIfFalse Cases
-    //////////////////////////////////////////////
-
-    {
-        SCOPED_TRACE("WarnIfFalse: Condition is true (no output expected)");
-        std::stringstream buffer;
-        auto* oldBuf = std::cerr.rdbuf(buffer.rdbuf());
-
-        DbChecker::WarnIfFalse(true, "Should not warn");
-
-        std::cerr.rdbuf(oldBuf);
-        const std::string output = buffer.str();
-        EXPECT_EQ(output, "");
-    }
-
-    {
-        SCOPED_TRACE("WarnIfFalse: Condition is false with valid message");
-        std::stringstream buffer;
-        auto* oldBuf = std::cerr.rdbuf(buffer.rdbuf());
-
-        DbChecker::WarnIfFalse(false, "Expected warning output");
-
-        std::cerr.rdbuf(oldBuf);
-        const std::string output = buffer.str();
-        EXPECT_EQ(output, "Warning: Expected warning output\n");
-    }
-
-    {
-        SCOPED_TRACE("WarnIfFalse: Empty string as warning message");
-        std::stringstream buffer;
-        auto* oldBuf = std::cerr.rdbuf(buffer.rdbuf());
-
-        DbChecker::WarnIfFalse(false, "");
-
-        std::cerr.rdbuf(oldBuf);
-        const std::string output = buffer.str();
-        EXPECT_EQ(output, "Warning: \n");
-    }
-
-    {
-        SCOPED_TRACE("WarnIfFalse: Warning message is nullptr (must crash due to CONFIRM)");
-        const char* msg = nullptr;
-        ASSERT_DEATH({
-            DbChecker::WarnIfFalse(false, msg);
-        }, ".*");
-    }
-}
-
-/////////////////////////////////
-
-/////////////////////////////////
-
-
-TEST(SQLiteConnector, DbConnection)
-{
-    static constexpr const auto CreateTempTestDb = []()->const char*
-    {
-        static const char* path = "temp_test.db";
-
-        // If file exists, delete it for a clean state
-        if (std::filesystem::exists(path))
-            std::filesystem::remove(path);
-
-        sqlite3* db = nullptr;
-        if (sqlite3_open(path, &db) != SQLITE_OK)
-        {
-            std::cerr << "Failed to create temporary test database." << std::endl;
-            std::terminate();
-        }
-
-        // Optional: Create a dummy table
-        sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS Dummy (Id INTEGER);", nullptr, nullptr, nullptr);
-
-        sqlite3_close(db);
-        return path;
-    };
-
-    ///////////////////////////////
-    // Normal cases
-    ///////////////////////////////
-
-    {
-        SCOPED_TRACE("Normal: Open connection in read-write mode");
-        EXPECT_NO_THROW({
-            DbConnection conn(CreateTempTestDb(), false);
-            sqlite3* handle = conn.Get();
-            EXPECT_NE(handle, nullptr);
-        });
-        std::filesystem::remove("temp_test.db");
-    }
-
-    {
-        SCOPED_TRACE("Normal: Open connection in read-only mode");
-        EXPECT_NO_THROW({
-            DbConnection conn(CreateTempTestDb(), true);
-            sqlite3* handle = conn.Get();
-            EXPECT_NE(handle, nullptr);
-        });
-        std::filesystem::remove("temp_test.db");
-    }
-
-    {
-        SCOPED_TRACE("Normal: Validate that returned sqlite3* is usable");
-        DbConnection conn(CreateTempTestDb(), false);
-        sqlite3_stmt* stmt = nullptr;
-        int rc = sqlite3_prepare_v2(conn.Get(), "SELECT 1", -1, &stmt, nullptr);
-        EXPECT_EQ(rc, SQLITE_OK);
-        sqlite3_finalize(stmt);
-        std::filesystem::remove("temp_test.db");
-    }
-
-    ///////////////////////////////
-    // Edge cases
-    ///////////////////////////////
-
-    {
-        SCOPED_TRACE("Edge: Open multiple simultaneous connections");
-        const char* PathToDb = CreateTempTestDb();
-        std::vector<std::unique_ptr<DbConnection>> pool;
-        EXPECT_NO_THROW({
-            for (int i = 0; i < 10; ++i)
-                pool.emplace_back(std::make_unique<DbConnection>(PathToDb, false));
-        });
-        std::filesystem::remove("temp_test.db");
-    }
-
-    {
-        SCOPED_TRACE("Edge: Multithreaded access to separate connections");
-        std::vector<std::thread> threads;
-        EXPECT_NO_THROW({
-            for (int i = 0; i < 5; ++i)
-            {
-                threads.emplace_back([] {
-                    DbConnection conn(CreateTempTestDb(), false);
-                    sqlite3_stmt* stmt = nullptr;
-                    int rc = sqlite3_prepare_v2(conn.Get(), "SELECT 1", -1, &stmt, nullptr);
-                    EXPECT_EQ(rc, SQLITE_OK);
-                    sqlite3_finalize(stmt);
-                });
-            }
-            for (auto& t : threads) t.join();
-        });
-        std::filesystem::remove("temp_test.db");
-    }
-
-    ///////////////////////////////
-    // Invalid inputs
-    ///////////////////////////////
-
-    {
-        SCOPED_TRACE("Invalid: Pass nullptr as DB path");
-        EXPECT_DEATH({
-            DbConnection conn(nullptr, false);
-        }, ".*");
-    }
-
-    {
-        SCOPED_TRACE("Invalid: Pass non-existent DB path in read-only mode");
-        EXPECT_DEATH({
-            DbConnection conn("nonexistent.db", true);
-        }, ".*");
-    }
-
-    ///////////////////////////////
-    // Empty structures
-    ///////////////////////////////
-
-    {
-        SCOPED_TRACE("Empty: Implicit close in destructor with no usage");
-        {
-            DbConnection conn(CreateTempTestDb(), false);
-        }
-        SUCCEED();  // Should destruct cleanly
-        std::filesystem::remove("temp_test.db");
-    }
-
-    {
-        SCOPED_TRACE("Empty: Ensure Get() never returns null after valid open");
-        DbConnection conn(CreateTempTestDb(), false);
-        EXPECT_NE(conn.Get(), nullptr);
-        std::filesystem::remove("temp_test.db");
-    }
-
-    ///////////////////////////////
-    // Maximums and minimums
-    ///////////////////////////////
-
-    {
-        SCOPED_TRACE("Maximum: Open many connections (stress test)");
-        const char* PathToDb = CreateTempTestDb();
-        std::vector<std::unique_ptr<DbConnection>> conns;
-        EXPECT_NO_THROW({
-            for (int i = 0; i < 100; ++i)
-                conns.emplace_back(std::make_unique<DbConnection>(PathToDb, false));
-        });
-        std::filesystem::remove("temp_test.db");
-    }
-
-    ///////////////////////////////
-    // Result code checking
-    ///////////////////////////////
-
-    {
-        SCOPED_TRACE("Check: Opening and closing report SQLITE_OK");
-        class VerboseDbChecker : public DbChecker {
-        public:
-            using DbChecker::DbChecker;
-            void CheckResult(int code, const char* context) {
-                EXPECT_EQ(code, SQLITE_OK) << "Failure during: " << context;
-            }
-        };
-
-        EXPECT_NO_THROW({
-            DbConnection conn(CreateTempTestDb(), false);
-        });
-        std::filesystem::remove("temp_test.db");
-    }
-
-    {
-        SCOPED_TRACE("Check: Confirm crash when DbHandle is null in Get()");
-
-        class CorruptDbConnection : public DbConnection {
-        public:
-            CorruptDbConnection(const char* Path) : DbConnection(Path, false) {
-                DbHandle = nullptr; // Simulate corruption
-            }
-        };
-
-        EXPECT_DEATH({
-            CorruptDbConnection BadConn(CreateTempTestDb());
-            BadConn.Get(); // Should trigger CONFIRM
-        }, ".*");
-        std::filesystem::remove("temp_test.db");
-    }
-
-    ///////////////////////////////
-    // Cleanup
-    ///////////////////////////////
-
-    std::filesystem::remove("temp_test.db");
-}
-
-
 ////////////////////////////////////////////
 
 ///////////////////////////////////////////
-
-
-TEST(SQLiteConnector, SQLiteStatement)
-{
-    // Helper to open an in-memory DB
-    constexpr const auto OpenInMemoryDb = [](void(*StatementUse)(sqlite3* db))
-    {
-        sqlite3* Db = nullptr;
-        int rc = sqlite3_open(":memory:", &Db);
-        EXPECT_EQ(rc, SQLITE_OK);
-        StatementUse(Db);
-        sqlite3_close(Db);
-    };
-
-    /////////////// WarnOnUnusedTail: No Warning Expected ///////////////
-    {
-        SCOPED_TRACE("WarnOnUnusedTail with null and empty tail should issue no warning");
-        const char* nullTail = nullptr;
-        SQLiteStatement::WarnOnUnusedTail(nullTail); // Should silently return
-
-        const char* emptyTail = "";
-        SQLiteStatement::WarnOnUnusedTail(emptyTail); // Should silently return
-    }
-
-    /////////////// WarnOnUnusedTail: Warning Expected ///////////////
-    {
-        SCOPED_TRACE("WarnOnUnusedTail with non-empty tail should issue warning");
-        const char* extra = "SELECT * FROM Table; extra";
-        SQLiteStatement::WarnOnUnusedTail(extra); // Should trigger warning
-    }
-
-    /////////////// PrepareStatement: Valid Statement ///////////////
-    {
-        SCOPED_TRACE("PrepareStatement should initialize StatementPtr correctly");
-        const auto StatementUse = [](sqlite3* db) {
-            const char* sql = "CREATE TABLE Test (Id INTEGER);";
-            SQLiteStatement stmt(db, sql);
-            ASSERT_NE(stmt.Get(), nullptr);
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Constructor: Valid Inputs ///////////////
-    {
-        SCOPED_TRACE("Constructor initializes DbHandle, Checker, and prepares statement");
-        const auto StatementUse = [](sqlite3* db) {
-            const char* sql = "CREATE TABLE Person (Name TEXT);";
-            SQLiteStatement stmt(db, sql);
-            ASSERT_NE(stmt.Get(), nullptr); // Verifies StatementPtr is initialized
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-
-    /////////////// Destructor: Statement Finalization ///////////////
-    {
-        SCOPED_TRACE("Destructor finalizes the statement without exception");
-        const auto StatementUse = [](sqlite3* db) {
-            const char* sql = "CREATE TABLE Thing (Value TEXT);";
-            {
-                SQLiteStatement stmt(db, sql);
-            } // Destructor should finalize statement
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Get: Returns Correct StatementPtr ///////////////
-    {
-        SCOPED_TRACE("Get should return initialized StatementPtr");
-        const auto StatementUse = [](sqlite3* db) {
-            const char* sql = "CREATE TABLE Animal (Type TEXT);";
-            SQLiteStatement stmt(db, sql);
-            ASSERT_EQ(stmt.Get(), stmt.Get()); // Identity check
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Step: SQLITE_DONE -> false ///////////////
-    {
-        SCOPED_TRACE("Step should return false when execution is complete (SQLITE_DONE)");
-        const auto StatementUse = [](sqlite3* db) {
-            sqlite3_exec(db, "CREATE TABLE Person(Id INTEGER); INSERT INTO Person VALUES (1);", nullptr, nullptr, nullptr);
-            SQLiteStatement stmt(db, "DELETE FROM Person WHERE Id = 2;");
-            bool hasRow = stmt.Step();
-            ASSERT_FALSE(hasRow);
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Step: SQLITE_ROW -> true ///////////////
-    {
-        SCOPED_TRACE("Step should return true when a row is available (SQLITE_ROW)");
-        const auto StatementUse = [](sqlite3* db) {
-            sqlite3_exec(db, "CREATE TABLE Person(Id INTEGER); INSERT INTO Person VALUES (42);", nullptr, nullptr, nullptr);
-            SQLiteStatement stmt(db, "SELECT * FROM Person;");
-            bool hasRow = stmt.Step();
-            ASSERT_TRUE(hasRow);
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Step: Unexpected Return -> Triggers CheckResult ///////////////
-    {
-        SCOPED_TRACE("Step on corrupted statement should trigger Checker");
-        const auto StatementUse = [](sqlite3* db) {
-            EXPECT_DEATH({
-                SQLiteStatement stmt(db, "SELECT nonexistent FROM missing;");
-            }, ".*");
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Reset: Valid Statement ///////////////
-    {
-        SCOPED_TRACE("Reset should successfully reset valid statement");
-        const auto StatementUse = [](sqlite3* db) {
-            sqlite3_exec(db, "CREATE TABLE Demo(Id INTEGER); INSERT INTO Demo VALUES (1);", nullptr, nullptr, nullptr);
-            SQLiteStatement stmt(db, "SELECT * FROM Demo;");
-            stmt.Step();  // First read
-            stmt.Reset(); // Reset to beginning
-            stmt.Step();  // Second read
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    ///////////////// Prepare: Malformed SQL should abort //////////////////
-    {
-        SCOPED_TRACE("Malformed SQL triggers failure in CheckResult during statement preparation");
-        const auto StatementUse = [](sqlite3* db) {
-            EXPECT_DEATH({
-                SQLiteStatement stmt(db, "SELECT FROM");
-            }, ".*");
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-
-    /////////////// Step and Reset: Multiple Execution ///////////////
-    {
-        SCOPED_TRACE("Step and Reset can be called multiple times correctly");
-        const auto StatementUse = [](sqlite3* db) {
-            sqlite3_exec(db, "CREATE TABLE Repeat(Id INTEGER); INSERT INTO Repeat VALUES (10);", nullptr, nullptr, nullptr);
-            SQLiteStatement stmt(db, "SELECT * FROM Repeat;");
-            ASSERT_TRUE(stmt.Step());
-            stmt.Reset();
-            ASSERT_TRUE(stmt.Step());
-        };
-        OpenInMemoryDb(StatementUse);
-    }
-}
 
 //////////////////////////////
 //          Connection Sentinel
@@ -557,38 +42,38 @@ TEST_F(SQLiteConnector_ConnectionSentinel, Cases)
     //////////////////// TC1: Basic Independent Destruction Without Sentinel ////////////////////
     {
         SCOPED_TRACE("TC1: Independent destruction without sentinel.");
-        DbConnection Db(TestDbPath, false, false);
-        SQLiteStatement Stmt(Db.Get(), "SELECT 1;");
+        SQLite_DbConnection Db(TestDbPath, false, false);
+        SQLite_Statement Stmt(Db.Get(), "SELECT 1;");
         EXPECT_NE(Stmt.Get(), nullptr);
     }
 
-    //////////////////// TC2: Automatic Invalidation When DbConnection Is Destroyed First ////////////////////
+    //////////////////// TC2: Automatic Invalidation When SQLite_DbConnection Is Destroyed First ////////////////////
     {
-        SCOPED_TRACE("TC2: Sentinel invalidates statements when DbConnection is destroyed first.");
-        SQLiteStatement* StatementPtr = nullptr;
+        SCOPED_TRACE("TC2: Sentinel invalidates statements when SQLite_DbConnection is destroyed first.");
+        SQLite_Statement* StatementPtr = nullptr;
 
         {
-            DbConnection Db(TestDbPath, false, true);
+            SQLite_DbConnection Db(TestDbPath, false, true);
             StatementCreationKit Kit = Db.MakeStatementKit();
-            StatementPtr = new SQLiteStatement(Kit, "SELECT 1;");
+            StatementPtr = new SQLite_Statement(Kit, "SELECT 1;");
         }
 
-        // DbConnection is destroyed here, invalidating statement.
+        // SQLite_DbConnection is destroyed here, invalidating statement.
         StatementPtr->Step();  // Should not crash even if StatementPtr is already finalized.
         delete StatementPtr;
     }
 
-    //////////////////// TC3: Early Destruction of SQLiteStatement ////////////////////
+    //////////////////// TC3: Early Destruction of SQLite_Statement ////////////////////
     {
-        SCOPED_TRACE("TC3: Statement destroyed before DbConnection, unregisters cleanly.");
-        DbConnection Db(TestDbPath, false, true);
+        SCOPED_TRACE("TC3: Statement destroyed before SQLite_DbConnection, unregisters cleanly.");
+        SQLite_DbConnection Db(TestDbPath, false, true);
         StatementCreationKit Kit = Db.MakeStatementKit();
         {
-            SQLiteStatement Stmt1(Kit, "SELECT 1;");
-            SQLiteStatement Stmt2(Kit, "SELECT 2;");
+            SQLite_Statement Stmt1(Kit, "SELECT 1;");
+            SQLite_Statement Stmt2(Kit, "SELECT 2;");
         }  // Stmt1 and Stmt2 destroyed here
 
-        // Should not cause issues during DbConnection destruction
+        // Should not cause issues during SQLite_DbConnection destruction
     }
 
     //////////////////// TC4: Statement Created Without Sentinel ////////////////////
@@ -599,7 +84,7 @@ TEST_F(SQLiteConnector_ConnectionSentinel, Cases)
 
         StatementCreationKit Kit{ std::weak_ptr<ConnectionSentinel>{}, RawDb };
         {
-            SQLiteStatement Stmt(Kit, "SELECT 1;");
+            SQLite_Statement Stmt(Kit, "SELECT 1;");
             EXPECT_NE(Stmt.Get(), nullptr);
         }
 
@@ -609,9 +94,9 @@ TEST_F(SQLiteConnector_ConnectionSentinel, Cases)
     //////////////////// TC5: Idempotency of FinalizeFromSentinel ////////////////////
     {
         SCOPED_TRACE("TC5: FinalizeFromSentinel can be safely called multiple times.");
-        DbConnection Db(TestDbPath, false, true);
+        SQLite_DbConnection Db(TestDbPath, false, true);
         StatementCreationKit Kit = Db.MakeStatementKit();
-        SQLiteStatement Stmt(Kit, "SELECT 1;");
+        SQLite_Statement Stmt(Kit, "SELECT 1;");
         Stmt.FinalizeFromSentinel();
         Stmt.FinalizeFromSentinel();  // Should be safe
     }
@@ -633,9 +118,9 @@ TEST_F(SQLiteConnector_ConnectionSentinel, Cases)
 
                 StatementCreationKit Kit{ SharedSentinel, DbHandle };
 
-                // SQLiteStatement must be destroyed before DbHandle, to avoid memory leak
+                // SQLite_Statement must be destroyed before DbHandle, to avoid memory leak
                 {
-                    SQLiteStatement Stmt(Kit, "SELECT 1;");
+                    SQLite_Statement Stmt(Kit, "SELECT 1;");
                 }
 
                 sqlite3_close(DbHandle);
@@ -660,9 +145,412 @@ TEST(MemoryLeakTest, WithoutConnectionSentinel_1)
         sqlite3* DbHandle = nullptr;
         sqlite3_open(":memory:", &DbHandle);
         // We deliberately omit finalization before closing DB to simulate leak
-        SQLiteStatement* Stmt = new SQLiteStatement(DbHandle, "SELECT 1;");
+        SQLite_Statement* Stmt = new SQLite_Statement(DbHandle, "SELECT 1;");
         sqlite3_close(DbHandle);  // Finalize will now do nothing, likely leaking memory
         delete Stmt;              // Finalize should fail silently
     }
 }
 #endif // EXAMINE_MEMORY_LEAK_WITHOUT_ConnectionSentinel
+
+///////////////////
+
+
+#ifdef BUKA_BABUKA
+
+
+///////////////////
+
+TEST(SQLiteConnector, SQLiteParamVisitor)
+{
+    sqlite3* Db = nullptr;
+    sqlite3_open(":memory:", &Db);
+    sqlite3_exec(Db, "CREATE TABLE Test (Val);", nullptr, nullptr, nullptr);
+
+    auto PrepareStatement = [&](const char* Sql) -> sqlite3_stmt* {
+        sqlite3_stmt* Stmt = nullptr;
+        sqlite3_prepare_v2(Db, Sql, -1, &Stmt, nullptr);
+        return Stmt;
+    };
+
+    auto ExecuteInsertAndReadBack = [&](sqlite3_stmt* Stmt, auto ColumnCheck) {
+        ASSERT_EQ(sqlite3_step(Stmt), SQLITE_DONE);
+        sqlite3_finalize(Stmt);
+
+        sqlite3_stmt* ReadStmt = PrepareStatement("SELECT Val FROM Test;");
+        ASSERT_EQ(sqlite3_step(ReadStmt), SQLITE_ROW);
+        ColumnCheck(ReadStmt);
+        sqlite3_finalize(ReadStmt);
+
+        sqlite3_exec(Db, "DELETE FROM Test;", nullptr, nullptr, nullptr); // Clean up
+    };
+
+    ///// TC01: Binding a standard integer value (33) /////
+    {
+        SCOPED_TRACE("TC01: Binding an int (33) using sqlite3_bind_int64.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(33), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_EQ(sqlite3_column_int64(Row, 0), 33);
+        });
+    }
+
+    ///// TC02: Binding a double value (3.1415) /////
+    {
+        SCOPED_TRACE("TC02: Binding a double (3.1415) using sqlite3_bind_double.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(3.1415), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_DOUBLE_EQ(sqlite3_column_double(Row, 0), 3.1415);
+        });
+    }
+
+    ///// TC03: Binding a standard string ("hello") /////
+    {
+        SCOPED_TRACE("TC03: Binding a string (\"hello\") using sqlite3_bind_text.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(std::string("hello")), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_STREQ(reinterpret_cast<const char*>(sqlite3_column_text(Row, 0)), "hello");
+        });
+    }
+
+    ///// TC04: Binding a null value /////
+    {
+        SCOPED_TRACE("TC04: Binding nullptr using sqlite3_bind_null.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(nullptr), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_EQ(sqlite3_column_type(Row, 0), SQLITE_NULL);
+        });
+    }
+
+    ///// TC05: Binding integer boundary values (INT64_MAX) /////
+    {
+        SCOPED_TRACE("TC05: Binding INT64_MAX to check boundary handling.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(std::numeric_limits<int64_t>::max()), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_EQ(sqlite3_column_int64(Row, 0), std::numeric_limits<int64_t>::max());
+        });
+    }
+
+    ///// TC06: Binding double boundary value (DBL_MAX) /////
+    {
+        SCOPED_TRACE("TC06: Binding DBL_MAX to check floating-point boundary.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(std::numeric_limits<double>::max()), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_DOUBLE_EQ(sqlite3_column_double(Row, 0), std::numeric_limits<double>::max());
+        });
+    }
+
+    ///// TC07: Binding empty string /////
+    {
+        SCOPED_TRACE("TC07: Binding an empty string.");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(std::string("")), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_STREQ(reinterpret_cast<const char*>(sqlite3_column_text(Row, 0)), "");
+        });
+    }
+
+    ///// TC08: Binding UTF-8 string /////
+    {
+        SCOPED_TRACE("TC08: Binding a UTF-8 string (\"Привет\").");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(std::string("Привет")), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_STREQ(reinterpret_cast<const char*>(sqlite3_column_text(Row, 0)), "Привет");
+        });
+    }
+
+    ///// TC09: Binding a very large string (1MB) /////
+    {
+        SCOPED_TRACE("TC09: Binding a very large string (~1MB).");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        std::string LargeString(1024 * 1024, 'A');
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(LargeString), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [&](sqlite3_stmt* Row) {
+            const char* Text = reinterpret_cast<const char*>(sqlite3_column_text(Row, 0));
+            ASSERT_NE(Text, nullptr);
+            EXPECT_EQ(std::string(Text).size(), LargeString.size());
+        });
+    }
+
+    ///// TC10: Binding to invalid parameter index (0) /////
+    {
+        SCOPED_TRACE("TC10: Binding using index 0 (invalid, expected abort).");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        EXPECT_THROW({SQLiteParamVisitor Visitor(Stmt, 0);}, std::runtime_error);
+        sqlite3_finalize(Stmt);
+    }
+
+    ///// TC11: Binding to a null (invalid) statement pointer /////
+    {
+        SCOPED_TRACE("TC11: Binding with a null sqlite3_stmt* (expected abort).");
+        sqlite3_stmt* Stmt = nullptr;
+        EXPECT_THROW({SQLiteParamVisitor Visitor(Stmt, 1);}, std::runtime_error);
+        sqlite3_finalize(Stmt);
+    }
+
+    ///// TC12: Binding twice to same parameter (overwrite check) /////
+    {
+        SCOPED_TRACE("TC12: Binding twice to the same parameter (expect overwrite).");
+        sqlite3_stmt* Stmt = PrepareStatement("INSERT INTO Test VALUES (?);");
+        SQLiteParamVisitor Visitor(Stmt, 1);
+        ASSERT_EQ(Visitor(std::string("initial")), SQLITE_OK);
+        ASSERT_EQ(Visitor(std::string("overwritten")), SQLITE_OK);
+        ExecuteInsertAndReadBack(Stmt, [](sqlite3_stmt* Row) {
+            EXPECT_STREQ(reinterpret_cast<const char*>(sqlite3_column_text(Row, 0)), "overwritten");
+        });
+    }
+
+    sqlite3_close(Db);
+}
+
+
+
+
+//-------------------------------------------------------------
+// TEST(SQLiteConnector, SQLite_NamedParamBinder)
+//-------------------------------------------------------------
+
+TEST(SQLiteConnector, SQLite_NamedParamBinder)
+{
+    sqlite3* DbHandle = nullptr;
+    ASSERT_EQ(sqlite3_open(":memory:", &DbHandle), SQLITE_OK);
+
+    auto Prepare = [](sqlite3* Db, const char* Sql, sqlite3_stmt** StmtOut) -> void {
+        ASSERT_EQ(sqlite3_prepare_v2(Db, Sql, -1, StmtOut, nullptr), SQLITE_OK);
+    };
+
+    auto Finalize = [](sqlite3_stmt* Stmt) -> void {
+        ASSERT_EQ(sqlite3_finalize(Stmt), SQLITE_OK);
+    };
+
+    ////////////////////// TC01: Empty Params //////////////////////
+    {
+        SCOPED_TRACE("TC01: No parameters in SQL or bind vector.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT 1;", &Stmt);
+
+        std::vector<BindablePair> Params{};
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC02: Exact Match //////////////////////
+    {
+        SCOPED_TRACE("TC02: One named parameter is correctly bound.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a;", &Stmt);
+
+        std::vector<BindablePair> Params{ {":a", int64_t(123)} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC03: Missing Param //////////////////////
+    {
+        SCOPED_TRACE("TC03: SQL has more params than provided (should abort).");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a, :b;", &Stmt);
+
+        std::vector<BindablePair> Params{ {":a", int64_t(1)} };
+        EXPECT_THROW(SQLite_NamedParamBinder::BindParamsByName(Stmt, Params), std::runtime_error);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC04: Extra Param //////////////////////
+    {
+        SCOPED_TRACE("TC04: Bind vector has extra unused parameter (should be ignored).");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :x;", &Stmt);
+
+        const auto lambda = [Stmt]()
+        {
+            std::vector<BindablePair> Params{ {":x", int64_t(1)}, {":y", int64_t(2)} };
+            SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+        };
+        EXPECT_THROW({lambda();}, std::runtime_error);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC05: Incorrect Name Format //////////////////////
+    {
+        SCOPED_TRACE("TC05: Parameter name without colon prefix (should fail).");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a;", &Stmt);
+
+        std::vector<BindablePair> Params{ {"a", int64_t(1)} };
+        EXPECT_THROW(SQLite_NamedParamBinder::BindParamsByName(Stmt, Params), std::runtime_error);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC06: Null Value //////////////////////
+    {
+        SCOPED_TRACE("TC06: Binding nullptr_t to named parameter.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a;", &Stmt);
+
+        std::vector<BindablePair> Params{ {":a", nullptr} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC07: Double Value //////////////////////
+    {
+        SCOPED_TRACE("TC07: Binding double value.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a;", &Stmt);
+
+        std::vector<BindablePair> Params{ {":a", 3.14} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC08: String Value //////////////////////
+    {
+        SCOPED_TRACE("TC08: Binding std::string.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a;", &Stmt);
+
+        std::vector<BindablePair> Params{ {":a", std::string("test")} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC09: Index Zero //////////////////////
+    {
+        SCOPED_TRACE("TC09: Parameter does not exist in SQL (bind index zero).");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT 1;", &Stmt);
+
+        std::vector<BindablePair> Params{ {":missing", int64_t(5)} };
+        EXPECT_THROW(SQLite_NamedParamBinder::BindParamsByName(Stmt, Params), std::runtime_error);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC10: Reset Failure Simulation //////////////////////
+    {
+        SCOPED_TRACE("TC10: Manually invalidate statement to simulate reset failure.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :a;", &Stmt);
+
+        sqlite3_finalize(Stmt); // Invalidates
+        std::vector<BindablePair> Params{ {":a", int64_t(5)} };
+
+        EXPECT_THROW(SQLite_NamedParamBinder::BindParamsByName(Stmt, Params), std::runtime_error);
+    }
+
+    ////////////////////// TC11: Clear Bindings Failure Skipped //////////////////////
+    // Not testable unless sqlite3 library is modified/mocked.
+
+    ////////////////////// TC12: Bind Failure with Unsupported Type //////////////////////
+    // Not testable unless variant contains unsupported type.
+
+    ////////////////////// TC13: Rebinding Statement //////////////////////
+    {
+        SCOPED_TRACE("TC13: Rebind same statement twice with different values.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, "SELECT :x;", &Stmt);
+
+        std::vector<BindablePair> Params1{ {":x", int64_t(10)} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params1);
+
+        std::vector<BindablePair> Params2{ {":x", std::string("hello")} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params2);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC14: Massive Params //////////////////////
+    {
+        SCOPED_TRACE("TC14: Bind 1000 named parameters in single statement.");
+        std::string Sql = "SELECT ";
+        std::vector<BindablePair> Params;
+        for (int i = 1; i <= 1000; ++i)
+        {
+            if (i > 1) Sql += ", ";
+            Sql += ":" + std::to_string(i);
+            Params.emplace_back(":" + std::to_string(i), int64_t(i));
+        }
+
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, Sql.c_str(), &Stmt);
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC15: UTF-8 Parameter Name //////////////////////
+    {
+        SCOPED_TRACE("TC15: Binding UTF-8 parameter name.");
+        sqlite3_stmt* Stmt = nullptr;
+        Prepare(DbHandle, reinterpret_cast<const char*>(u8"SELECT :ключ;"), &Stmt);
+
+        std::vector<BindablePair> Params{ {reinterpret_cast<const char*>(u8":ключ"), int64_t(777)} };
+        SQLite_NamedParamBinder::BindParamsByName(Stmt, Params);
+
+        Finalize(Stmt);
+    }
+
+    ////////////////////// TC16: Duplicate Param Name Entries //////////////////////
+    {
+        SCOPED_TRACE("TC16: Bind vector has duplicated entries for same param used twice (should NOT abort).");
+
+        sqlite3* DB = nullptr;
+        ASSERT_EQ(sqlite3_open(":memory:", &DB), SQLITE_OK);
+
+        const char* CreateTableSQL =
+            "CREATE TABLE Items (Id INTEGER PRIMARY KEY, Name TEXT);"
+            "INSERT INTO Items (Name) VALUES ('Alpha');"
+            "INSERT INTO Items (Name) VALUES ('Beta');"
+            "INSERT INTO Items (Name) VALUES ('Gamma');";
+
+        char* ErrorMsg = nullptr;
+        ASSERT_EQ(sqlite3_exec(DB, CreateTableSQL, nullptr, nullptr, &ErrorMsg), SQLITE_OK);
+
+        const char* SelectSQL =
+            "SELECT Id, Name FROM Items WHERE Name = @Key OR @Key = 'Alpha';";
+
+        sqlite3_stmt* Statement = nullptr;
+        ASSERT_EQ(sqlite3_prepare_v2(DB, SelectSQL, -1, &Statement, nullptr), SQLITE_OK);
+
+        // Duplicate entries for the same named parameter
+        std::vector<BindablePair> Params = {
+            { "@Key", std::string("Beta") },
+            { "@Key", std::string("Beta") }
+        };
+
+        SQLite_NamedParamBinder::BindParamsByName(Statement, Params);
+
+        sqlite3_finalize(Statement);
+        sqlite3_close(DB);
+    }
+
+    sqlite3_close(DbHandle);
+}
+
+#endif // #ifdef BUKA_BABUKA
+
+
+
+

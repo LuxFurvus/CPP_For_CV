@@ -1,234 +1,237 @@
-
 #include <limits>
 #include <string>
-////////
+#include <vector>
+#include <map>
 #include <gtest/gtest.h>
-////////
 #include "ConditionChecker.h"
 
-TEST(ConditionCheckerDeathTest, ReportFailure)
-{
-    {
-        SCOPED_TRACE("Standard failure report with typical condition info");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("x > 0", "test.cpp", 42);
-        }, "Condition check failed");
-    }
-
-    {
-        SCOPED_TRACE("Zero line number");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("value == 0", "file.cpp", 0);
-        }, "file\\.cpp:0");
-    }
-
-    {
-        SCOPED_TRACE("Long condition expression");
-        std::string LongCond(1000, 'C');
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure(LongCond.c_str(), "long.cpp", 7);
-        }, "long\\.cpp:7");
-    }
-
-    {
-        SCOPED_TRACE("Null condition name");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure(nullptr, "main.cpp", 10);
-        }, "main\\.cpp:10");
-    }
-
-    {
-        SCOPED_TRACE("Null file name");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("SomeCondition", nullptr, 99);
-        }, "Location    : \\(unknown\\):99");
-    }
-
-    {
-        SCOPED_TRACE("Empty condition expression and file name");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("", "", 1);
-        }, "Location    : :1");
-    }
-
-    {
-        SCOPED_TRACE("Minimum and maximum line numbers");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("MinLine", "file.cpp", std::numeric_limits<int>::min());
-        }, "file\\.cpp");
-
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("MaxLine", "file.cpp", std::numeric_limits<int>::max());
-        }, "file\\.cpp");
-    }
-
-    {
-        SCOPED_TRACE("Check stack trace format");
-        EXPECT_DEATH({
-            InternalConfirm::ReportConditionFailure("TraceCheck", "trace.cpp", 888);
-        }, "Stack trace");
-    }
-}
-
+using namespace ::testing::internal;
 
 ///////////////////////////
+// CORE FUNCTION TESTS
+///////////////////////////
 
-
-TEST(ConditionCheckerDeathTest, ConfirmMacro)
+TEST(ConditionChecker, T01_ReportBasicInfo)
 {
-    ///////////////////////////////
-    /// NORMAL CASES
-    ///////////////////////////////
+    SCOPED_TRACE("Standard failure report with valid condition and location");
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure("x > 0", "test.cpp", 42);
+    }, std::runtime_error);
+}
 
-    // Condition fails: substring not found
+TEST(ConditionChecker, T02_ReportNullCondition)
+{
+    SCOPED_TRACE("Null condition expression string");
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure(nullptr, "file.cpp", 7);
+    }, std::runtime_error);
+}
+
+TEST(ConditionChecker, T03_ReportNullFile)
+{
+    SCOPED_TRACE("Null file name string");
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure("SomeCondition", nullptr, 99);
+    }, std::runtime_error);
+}
+
+TEST(ConditionChecker, T04_ReportEmptyConditionAndFile)
+{
+    SCOPED_TRACE("Empty condition and empty file name");
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure("", "", 1);
+    }, std::runtime_error);
+}
+
+TEST(ConditionChecker, T05_ReportLongCondition)
+{
+    SCOPED_TRACE("Long condition string");
+    std::string LongCond(1000, 'X');
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure(LongCond.c_str(), "long.cpp", 17);
+    }, std::runtime_error);
+}
+
+TEST(ConditionChecker, T06_ReportExtremeLineNumbers)
+{
+    SCOPED_TRACE("Extreme line number values");
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure("MinLine", "file.cpp", std::numeric_limits<int>::min());
+    }, std::runtime_error);
+
+    EXPECT_THROW({
+        ConditionChecker::ReportConditionFailure("MaxLine", "file.cpp", std::numeric_limits<int>::max());
+    }, std::runtime_error);
+}
+
+///////////////////////////
+// STACKTRACE ENABLEMENT TESTS
+///////////////////////////
+
+TEST(ConditionChecker, T07_EnableStacktraceTrue)
+{
+    SCOPED_TRACE("Enable stacktrace and verify flag");
+    ConditionChecker::SetStacktraceEnabled(true);
+    EXPECT_TRUE(ConditionChecker::IsStacktraceEnabled());
+}
+
+TEST(ConditionChecker, T08_EnableStacktraceFalse)
+{
+    SCOPED_TRACE("Disable stacktrace and verify flag");
+    ConditionChecker::SetStacktraceEnabled(false);
+    EXPECT_FALSE(ConditionChecker::IsStacktraceEnabled());
+}
+
+TEST(ConditionChecker, T09_StacktraceIsPrintedWhenEnabled)
+{
+    SCOPED_TRACE("Capture output and expect stack trace when enabled");
+
+    ConditionChecker::SetStacktraceEnabled(true);
+
+    std::string Output;
+    try
     {
-        SCOPED_TRACE("Substring not found");
-        std::string Text = "Hello";
-        EXPECT_DEATH({
-            CONFIRM(Text.find("world") != std::string::npos);
-        }, "Condition check failed");
+        CaptureStderr();
+        ConditionChecker::ReportConditionFailure("TraceEnabled", "trace.cpp", 777);
+    }
+    catch (const std::runtime_error& E)
+    {
+        Output = GetCapturedStderr();
+        std::string What = E.what();
+        Output += What;
     }
 
-    // Condition fails: null pointer comparison
+    EXPECT_NE(Output.find("Stack trace"), std::string::npos);
+}
+
+TEST(ConditionChecker, T10_StacktraceIsOmittedWhenDisabled)
+{
+    SCOPED_TRACE("Capture output and expect no stack trace when disabled");
+
+    ConditionChecker::SetStacktraceEnabled(false);
+
+    std::string Output;
+    try
     {
-        SCOPED_TRACE("Null pointer check fails");
-        const char* Ptr = nullptr;
-        EXPECT_DEATH({
-            CONFIRM(Ptr != nullptr);
-        }, "Condition check failed");
+        CaptureStderr();
+        ConditionChecker::ReportConditionFailure("TraceDisabled", "trace.cpp", 888);
+    }
+    catch (const std::runtime_error& E)
+    {
+        Output = GetCapturedStderr();
+        std::string What = E.what();
+        Output += What;
     }
 
-    // Condition fails: boolean false literal
-    {
-        SCOPED_TRACE("Literal false condition");
-        EXPECT_DEATH({
-            CONFIRM(false);
-        }, "Condition check failed");
-    }
+    EXPECT_EQ(Output.find("Stack trace"), std::string::npos);
+}
 
-    ///////////////////////////////
-    /// EDGE CASES
-    ///////////////////////////////
+///////////////////////////
+// MACRO TESTS: CONFIRM
+///////////////////////////
 
-    // Zero-like integer check
-    {
-        SCOPED_TRACE("Integer equals zero");
-        int Value = 0;
-        EXPECT_DEATH({
-            CONFIRM(Value != 0);
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T11_ConfirmFalseLiteral)
+{
+    SCOPED_TRACE("CONFIRM(false)");
+    EXPECT_THROW({
+        CONFIRM(false);
+    }, std::runtime_error);
+}
 
-    // Floating point epsilon check
-    {
-        SCOPED_TRACE("Floating-point small value check");
-        double Small = 1e-16;
-        EXPECT_DEATH({
-            CONFIRM(Small > 1e-10);
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T12_ConfirmNullPointer)
+{
+    SCOPED_TRACE("CONFIRM(nullptr != nullptr)");
+    const char* Ptr = nullptr;
+    EXPECT_THROW({
+        CONFIRM(Ptr != nullptr);
+    }, std::runtime_error);
+}
 
-    // Fails on empty string
-    {
-        SCOPED_TRACE("Empty string non-empty check fails");
-        std::string S;
-        EXPECT_DEATH({
-            CONFIRM(!S.empty());
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T13_ConfirmZeroInt)
+{
+    SCOPED_TRACE("CONFIRM(0 != 0)");
+    int Value = 0;
+    EXPECT_THROW({
+        CONFIRM(Value != 0);
+    }, std::runtime_error);
+}
 
-    ///////////////////////////////
-    /// INVALID INPUTS
-    ///////////////////////////////
+TEST(ConditionChecker, T14_ConfirmEmptyString)
+{
+    SCOPED_TRACE("Empty std::string should not be empty");
+    std::string Text;
+    EXPECT_THROW({
+        CONFIRM(!Text.empty());
+    }, std::runtime_error);
+}
 
-    // Simulated bad pointer dereference guard
-    {
-        SCOPED_TRACE("Simulated pointer invalidity");
-        int* P = nullptr;
-        EXPECT_DEATH({
-            CONFIRM(P != nullptr);
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T15_ConfirmVectorEmpty)
+{
+    SCOPED_TRACE("Empty vector expected to be non-empty");
+    std::vector<int> V;
+    EXPECT_THROW({
+        CONFIRM(!V.empty());
+    }, std::runtime_error);
+}
 
-    // Invalid condition logic
-    {
-        SCOPED_TRACE("Division by zero is not attempted but check fails");
-        int Denominator = 0;
-        EXPECT_DEATH({
-            CONFIRM(Denominator != 0);
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T16_ConfirmMapMissingKey)
+{
+    SCOPED_TRACE("Missing key in std::map");
+    std::map<std::string, int> M;
+    EXPECT_THROW({
+        CONFIRM(M.contains("missing"));
+    }, std::runtime_error);
+}
 
-    ///////////////////////////////
-    /// EMPTY STRUCTURES
-    ///////////////////////////////
+TEST(ConditionChecker, T17_ConfirmDoubleTooSmall)
+{
+    SCOPED_TRACE("Double comparison fails");
+    double Val = 1e-15;
+    EXPECT_THROW({
+        CONFIRM(Val > 1e-10);
+    }, std::runtime_error);
+}
 
-    // Empty vector check
-    {
-        SCOPED_TRACE("Empty vector should not be empty");
-        std::vector<int> Data;
-        EXPECT_DEATH({
-            CONFIRM(!Data.empty());
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T18_ConfirmMaxDoubleTooLarge)
+{
+    SCOPED_TRACE("DBL_MAX < threshold fails");
+    double Max = std::numeric_limits<double>::max();
+    EXPECT_THROW({
+        CONFIRM(Max < 1e308);
+    }, std::runtime_error);
+}
 
-    // Empty map key check
-    {
-        SCOPED_TRACE("Empty map lookup failure");
-        std::map<std::string, int> Map;
-        EXPECT_DEATH({
-            CONFIRM(Map.contains("key"));
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T19_ConfirmIntMinNegative)
+{
+    SCOPED_TRACE("INT_MIN > 0 check fails");
+    int Min = std::numeric_limits<int>::min();
+    EXPECT_THROW({
+        CONFIRM(Min > 0);
+    }, std::runtime_error);
+}
 
-    ///////////////////////////////
-    /// MAXIMUMS AND MINIMUMS
-    ///////////////////////////////
+TEST(ConditionChecker, T20_ConfirmUnsignedWraparound)
+{
+    SCOPED_TRACE("UINT_MAX + 1 > UINT_MAX always false");
+    unsigned int Max = std::numeric_limits<unsigned int>::max();
+    EXPECT_THROW({
+        CONFIRM(Max + 1 > Max);
+    }, std::runtime_error);
+}
 
-    // Minimum integer comparison
-    {
-        SCOPED_TRACE("INT_MIN fails comparison");
-        int Min = std::numeric_limits<int>::min();
-        EXPECT_DEATH({
-            CONFIRM(Min > 0);
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T21_ConfirmFalseViaNotTrue)
+{
+    SCOPED_TRACE("CONFIRM(!true)");
+    EXPECT_THROW({
+        CONFIRM(!true);
+    }, std::runtime_error);
+}
 
-    // Integer overflow logic
-    {
-        SCOPED_TRACE("UINT_MAX fails check");
-        uint Max = std::numeric_limits<uint>::max();
-        EXPECT_DEATH({
-            CONFIRM(Max + 1 > Max);
-        }, "Condition check failed");
-    }
-
-    // Maximum floating-point check
-    {
-        SCOPED_TRACE("DBL_MAX fails upper bound check");
-        double Max = std::numeric_limits<double>::max();
-        EXPECT_DEATH({
-            CONFIRM(Max < 1e308); // Always false
-        }, "Condition check failed");
-    }
-
-    ///////////////////////////////
-    /// SELF-CONTAINED FAILURES
-    ///////////////////////////////
-
-    // Confirm(false) hardcoded
-    {
-        SCOPED_TRACE("Direct confirm(false)");
-        EXPECT_DEATH({
-            CONFIRM(false);
-        }, "Condition check failed");
-    }
-
-    // Negated true
-    {
-        SCOPED_TRACE("Negated true should fail");
-        EXPECT_DEATH({
-            CONFIRM(!true);
-        }, "Condition check failed");
-    }
+TEST(ConditionChecker, T22_ConfirmStringNotFound)
+{
+    SCOPED_TRACE("std::string::find returns npos");
+    std::string Text = "Hello";
+    EXPECT_THROW({
+        CONFIRM(Text.find("world") != std::string::npos);
+    }, std::runtime_error);
 }

@@ -1,34 +1,48 @@
 #pragma once
 
-#include <iostream>
-#include <format>
-#include <cstdlib>
-////////
-#define BOOST_STACKTRACE_USE_ADDR2LINE
-#include <boost/stacktrace.hpp>
+#include <atomic>
+#include <string_view>
 
-namespace InternalConfirm
+///////////////////
+
+class ConditionChecker
 {
-    [[noreturn]] inline void 
-    ReportConditionFailure(const char* ExprText, const char* File, int Line)
-    {
-        std::cerr << std::format("\n\n❌ Condition check failed\n"
-                                 "Expression  : {}\n"
-                                 "Location    : {}:{}\n",
-                                 ExprText ? ExprText : "(null)",
-                                 File ? File : "(unknown)",
-                                 Line);
-        std::cerr << "🔍 Stack trace:\n";
-        std::cerr << boost::stacktrace::stacktrace() << "\n";
+private:
+    static inline std::atomic<bool> IncludeStacktrace = false;
 
-        std::abort();
-    }
-}
+public:
+    static void SetStacktraceEnabled(bool IsEnabled);
+    static bool IsStacktraceEnabled();
+
+    [[noreturn]] static void 
+        ReportConditionFailure(const char* ExprText, const char* File, int Line, std::string_view ErrorMsg = "");
+};
+
+///////////////////
 
 #define CONFIRM(Expr) \
     do { \
         if (!(Expr)) \
         { \
-            ::InternalConfirm::ReportConditionFailure(#Expr, __FILE__, __LINE__); \
+            ::ConditionChecker::ReportConditionFailure(#Expr, __FILE__, __LINE__); \
         } \
     } while (false)
+
+    
+#define CONFIRMF(Expr, ErrorMsg) \
+    do { \
+        if (!(Expr)) \
+        { \
+            ::ConditionChecker::ReportConditionFailure(#Expr, __FILE__, __LINE__, ErrorMsg); \
+        } \
+    } while (false)
+    
+#define CONFIRMS(Expr, ...) \
+    do { \
+        if (!(Expr)) \
+        { \
+            ::ConditionChecker::ReportConditionFailure(#Expr, __FILE__, __LINE__, std::format(__VA_ARGS__)); \
+        } \
+    } while (false)
+
+/// end: ConditionChecker.h
