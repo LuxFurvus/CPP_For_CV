@@ -6,20 +6,20 @@
 
 ////////////////////
 
-void SQLite_DbChecker::CheckResult(const int ResultCode, const char* OperatonType)
+void SQLite_DbChecker::CheckResult(const int ResultCode, const char* OperationType)
 {
     if (ResultCode == SQLITE_OK) return;
-    CONFIRMS(false, "ErrorCode: {}, Operation: [{}]", ResultCode, OperatonType);
+    CONFIRMS(false, "ErrorCode: {}, Operation: [{}]", ResultCode, OperationType);
 }
 
-void SQLite_DbChecker::CheckResult(sqlite3* DbHandle, const int ResultCode, const char* OperatonType)
+void SQLite_DbChecker::CheckResult(sqlite3* DbHandle, const int ResultCode, const char* OperationType)
 {
     if (ResultCode == SQLITE_OK) return;
-    CONFIRMF(OperatonType, "OperatonType message is null");
+    CONFIRMS(OperationType, "OperationType message is null");
 
     const int ErrorCode = sqlite3_extended_errcode(DbHandle);
     CONFIRMS(false,
-        "ErrorCode: {}, Operation: [{}]: {}", ErrorCode, OperatonType, sqlite3_errmsg(DbHandle));
+        "ErrorCode: {}, Operation: [{}]: {}", ErrorCode, OperationType, sqlite3_errmsg(DbHandle));
 }
 
 void SQLite_DbChecker::WarnIfFalse(const bool Condition, const char* WarningMsg)
@@ -283,8 +283,8 @@ void SQLite_ParamValidator::CheckForParamNamePresence(sqlite3_stmt* Statement, c
 
         const std::string NormalizedParamName = NormalizeParamName(ParamName);
 
-        CONFIRMF(ParamNames.contains(NormalizedParamName),
-            std::format("Param name {} is not provided", ParamName));
+        CONFIRMS(ParamNames.contains(NormalizedParamName),
+            "Param name {} is not provided", ParamName);
     }
 }
 
@@ -302,12 +302,12 @@ int SQLite_NamedParamBinder::BindOneParam(sqlite3_stmt* Statement, const int Par
 void SQLite_NamedParamBinder::PrepareStatementForBinding(sqlite3_stmt* Statement)
 {
     const int ResetResult = sqlite3_reset(Statement);
-    CONFIRMF(!ResetResult,
-        std::format("Error [{}]: Failed to reset statement", ResetResult));
+    CONFIRMS(!ResetResult,
+        "Error [{}]: Failed to reset statement", ResetResult);
 
     const int ClearResult = sqlite3_clear_bindings(Statement);
-    CONFIRMF(!ClearResult,
-        std::format("Error [{}]: Failed to clear bindings", ClearResult));
+    CONFIRMS(!ClearResult,
+        "Error [{}]: Failed to clear bindings", ClearResult);
 }
 
 void SQLite_NamedParamBinder::ApplyBindablePairsToStatement(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
@@ -316,13 +316,13 @@ void SQLite_NamedParamBinder::ApplyBindablePairsToStatement(sqlite3_stmt* Statem
     {
         const int ParamIndex = sqlite3_bind_parameter_index(Statement, Name.c_str());
 
-        CONFIRMF(ParamIndex != 0,
-            std::format("Param name {} is not provided", Name));
+        CONFIRMS(ParamIndex != 0,
+            "Param name {} is not provided", Name);
 
         const int BindResult = BindOneParam(Statement, ParamIndex, Value);
 
-        CONFIRMF(!BindResult,
-            std::format("Error [{}]: Failed to bind param {}", BindResult, Name));
+        CONFIRMS(!BindResult,
+            "Error [{}]: Failed to bind param {}", BindResult, Name);
     }
 }
 

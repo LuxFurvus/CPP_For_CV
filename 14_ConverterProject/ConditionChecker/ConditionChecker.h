@@ -27,15 +27,6 @@ public:
             ::ConditionChecker::ReportConditionFailure(#Expr, __FILE__, __LINE__); \
         } \
     } while (false)
-
-    
-#define CONFIRMF(Expr, ErrorMsg) \
-    do { \
-        if (!(Expr)) \
-        { \
-            ::ConditionChecker::ReportConditionFailure(#Expr, __FILE__, __LINE__, ErrorMsg); \
-        } \
-    } while (false)
     
 #define CONFIRMS(Expr, ...) \
     do { \

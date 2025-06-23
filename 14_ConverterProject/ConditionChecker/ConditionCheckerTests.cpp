@@ -15,7 +15,12 @@ TEST(ConditionChecker, T01_ReportBasicInfo)
 {
     SCOPED_TRACE("Standard failure report with valid condition and location");
     EXPECT_THROW({
-        ConditionChecker::ReportConditionFailure("x > 0", "test.cpp", 42);
+        try {
+            ConditionChecker::ReportConditionFailure("x > 0", "test.cpp", 42);
+        } catch (const std::runtime_error& e) {
+            EXPECT_NE(std::string(e.what()).find("x > 0"), std::string::npos);
+            throw;
+        }
     }, std::runtime_error);
 }
 
