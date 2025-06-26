@@ -2,32 +2,11 @@
 #include <mutex>
 #include <cstring>
 ////////
+#include <sqlite3.h>
+#include <gtest/gtest.h>
+////////
 #include "SQLiteConnector.h"
 
-////////////////////
-
-void SQLite_DbChecker::CheckResult(const int ResultCode, const char* OperationType)
-{
-    if (ResultCode == SQLITE_OK) return;
-    CONFIRMS(false, "ErrorCode: {}, Operation: [{}]", ResultCode, OperationType);
-}
-
-void SQLite_DbChecker::CheckResult(sqlite3* DbHandle, const int ResultCode, const char* OperationType)
-{
-    if (ResultCode == SQLITE_OK) return;
-    CONFIRMS(OperationType, "OperationType message is null");
-
-    const int ErrorCode = sqlite3_extended_errcode(DbHandle);
-    CONFIRMS(false,
-        "ErrorCode: {}, Operation: [{}]: {}", ErrorCode, OperationType, sqlite3_errmsg(DbHandle));
-}
-
-void SQLite_DbChecker::WarnIfFalse(const bool Condition, const char* WarningMsg)
-{
-    if (Condition) return;
-    CONFIRM(WarningMsg);
-    std::print(std::cerr, "Warning: {}\n", WarningMsg);
-}
 
 ////////////////////
 
@@ -39,11 +18,18 @@ void SQLite_DbConnection::SetupConnection(const char* WayToDb, const bool IsRead
     const int AllFlags = OpenFlags | SQLITE_OPEN_EXRESCODE | SQLITE_OPEN_FULLMUTEX;
     const int OpenResult = sqlite3_open_v2(WayToDb, &DbHandle, AllFlags, nullptr);
 
-    CONFIRMS(!OpenResult,
-        "Error {}: [{}]", OpenResult, sqlite3_errmsg(DbHandle));
+    CheckOpenResult(OpenResult);
 
     if (!EnableSentinel) return;
-    Sentinel = std::make_shared<ConnectionSentinel>();
+    Sentinel = std::make_shared<SQLite_ConnectionSentinel>();
+}
+
+void SQLite_DbConnection::CheckOpenResult(const int OpenResult)
+{
+    if (OpenResult == SQLITE_OK) return;
+    CloseConnection();
+    CONFIRMS(!OpenResult,
+        "Error {}: [{}]", OpenResult, sqlite3_errmsg(DbHandle));
 }
 
 SQLite_DbConnection::SQLite_DbConnection(const char* WayToDb, const bool IsReadOnly, const bool EnableSentinel)
@@ -52,13 +38,18 @@ SQLite_DbConnection::SQLite_DbConnection(const char* WayToDb, const bool IsReadO
     SetupConnection(WayToDb, IsReadOnly, EnableSentinel);
 }
 
-SQLite_DbConnection::~SQLite_DbConnection()
+void SQLite_DbConnection::CloseConnection()
 {
     if (Sentinel) Sentinel->InvalidateAll();
     const int CloseResult = sqlite3_close(DbHandle);
     
     CONFIRMS(!CloseResult,
         "Error {}: [{}]", CloseResult, sqlite3_errmsg(DbHandle));
+}
+
+SQLite_DbConnection::~SQLite_DbConnection()
+{
+    CloseConnection();
 }
 
 sqlite3* SQLite_DbConnection::Get() const
@@ -80,16 +71,7 @@ void SQLite_Statement::WarnOnUnusedTail(const char* UnusedTail)
 {
     const bool NoUnusedTail = UnusedTail == nullptr || strlen(UnusedTail) == 0;
     if (NoUnusedTail) return;
-    const std::string UnusedTailMsg = std::format("Unused tail [{}]: {}", strlen(UnusedTail), UnusedTail);
-    SQLite_DbChecker::WarnIfFalse(NoUnusedTail, UnusedTailMsg.c_str());
-}
-
-void SQLite_Statement::FinalizeFromSentinel()
-{
-    if (!IsValid()) return;
-    sqlite3_finalize(StatementPtr);
-    StatementPtr = nullptr;
-    DbHandle = nullptr;
+    std::cerr << std::format("\n Unused tail [{}]: {}\n", strlen(UnusedTail), UnusedTail);
 }
 
 void SQLite_Statement::PrepareStatement(sqlite3* DbHandleParam, const char* SqlQuery)
@@ -97,20 +79,23 @@ void SQLite_Statement::PrepareStatement(sqlite3* DbHandleParam, const char* SqlQ
     DbHandle = DbHandleParam;
     const char* UnusedTail = nullptr;
     const int PrepareResult = sqlite3_prepare_v2(DbHandleParam, SqlQuery, -1, &StatementPtr, &UnusedTail);
-    SQLite_DbChecker::CheckResult(DbHandle, PrepareResult, "prepare");
+    
+    CONFIRMS(!PrepareResult,
+        "Error [{}]: [{}]", PrepareResult, sqlite3_errmsg(DbHandleParam));
+
     WarnOnUnusedTail(UnusedTail);
 }
 
-void SQLite_Statement::RegisterInSentinel(std::weak_ptr<ConnectionSentinel> Sentinel)
+void SQLite_Statement::RegisterInSentinel(std::weak_ptr<SQLite_ConnectionSentinel> Sentinel)
 {
-    std::shared_ptr<ConnectionSentinel> SharedSentinel = Sentinel.lock();
+    std::shared_ptr<SQLite_ConnectionSentinel> SharedSentinel = Sentinel.lock();
     if (!SharedSentinel) return;
     SharedSentinel->Register(this);
 }
 
 void SQLite_Statement::UnRegisterFromSentinel()
 {
-    std::shared_ptr<ConnectionSentinel> SharedSentinel = Sentinel.lock();
+    std::shared_ptr<SQLite_ConnectionSentinel> SharedSentinel = Sentinel.lock();
     if (!SharedSentinel) return;
     SharedSentinel->Unregister(this);
 }
@@ -130,14 +115,22 @@ SQLite_Statement::SQLite_Statement(const StatementCreationKit& Kit, const char* 
     RegisterInSentinel(Sentinel);
 }
 
-SQLite_Statement::~SQLite_Statement()
+void SQLite_Statement::Finalize()
 {
     UnRegisterFromSentinel();
     if (StatementPtr == nullptr) return;
     const int FinalizeResult = sqlite3_finalize(StatementPtr);
-    SQLite_DbChecker::CheckResult(DbHandle, FinalizeResult, "finalize");
+
+    CONFIRMS(!FinalizeResult,
+        "Error [{}]: [{}]", FinalizeResult, sqlite3_errmsg(DbHandle));
+
     StatementPtr = nullptr;
     DbHandle = nullptr;
+}
+
+SQLite_Statement::~SQLite_Statement()
+{
+    Finalize();
 }
 
 sqlite3_stmt* SQLite_Statement::Get() const
@@ -163,7 +156,8 @@ bool SQLite_Statement::Step() const
         case SQLITE_DONE:
             return false;
         default:
-            SQLite_DbChecker::CheckResult(DbHandle, StepResult, "step");
+            CONFIRMS(!StepResult,
+                "Error [{}]: [{}]", StepResult, sqlite3_errmsg(DbHandle));
             return false;
     }
 }
@@ -172,26 +166,27 @@ void SQLite_Statement::Reset() const
 {
     if (!IsValid()) return;
     const int ResetResult = sqlite3_reset(StatementPtr);
-    SQLite_DbChecker::CheckResult(DbHandle, ResetResult, "reset");
+    CONFIRMS(!ResetResult,
+        "Error [{}]: [{}]", ResetResult, sqlite3_errmsg(DbHandle));
 }
 
 
 ////////////////////
 
 
-void ConnectionSentinel::Register(SQLite_Statement* Statement)
+void SQLite_ConnectionSentinel::Register(SQLite_Statement* Statement)
 {
     std::scoped_lock Lock(Mutex);
     ActiveStatements.insert(Statement);
 }
 
-void ConnectionSentinel::Unregister(SQLite_Statement* Statement)
+void SQLite_ConnectionSentinel::Unregister(SQLite_Statement* Statement)
 {
     std::scoped_lock Lock(Mutex);
     ActiveStatements.erase(Statement);
 }
 
-void ConnectionSentinel::InvalidateAll()
+void SQLite_ConnectionSentinel::InvalidateAll()
 {
     std::unordered_set<SQLite_Statement*> Snapshot;
 
@@ -204,11 +199,11 @@ void ConnectionSentinel::InvalidateAll()
     for (SQLite_Statement* Statement : Snapshot)
     {
         if (Statement == nullptr) continue;
-        Statement->FinalizeFromSentinel();
+        Statement->Finalize();
     }
 }
 
-ConnectionSentinel::~ConnectionSentinel()
+SQLite_ConnectionSentinel::~SQLite_ConnectionSentinel()
 {
     InvalidateAll();
 }
@@ -217,34 +212,34 @@ ConnectionSentinel::~ConnectionSentinel()
 ////////////////////
 
 
-SQLiteParamVisitor::SQLiteParamVisitor(sqlite3_stmt* Statement, const int ParamIndex)
+SQLite_ParamVisitor::SQLite_ParamVisitor(sqlite3_stmt* Statement, const int ParamIndex)
     : Statement(Statement), ParamIndex(ParamIndex)
 {
     CONFIRM(Statement);
     CONFIRM(ParamIndex > 0);
 }
 
-int SQLiteParamVisitor::operator()(const int64_t Value) const
+int SQLite_ParamVisitor::operator()(const int64_t Value) const
 {
     return sqlite3_bind_int64(Statement, ParamIndex, Value);
 }
 
-int SQLiteParamVisitor::operator()(const int Value) const
+int SQLite_ParamVisitor::operator()(const int Value) const
 {
     return (*this)(static_cast<int64_t>(Value));
 }
 
-int SQLiteParamVisitor::operator()(const double Value) const
+int SQLite_ParamVisitor::operator()(const double Value) const
 {
     return sqlite3_bind_double(Statement, ParamIndex, Value);
 }
 
-int SQLiteParamVisitor::operator()(const std::string& Value) const
+int SQLite_ParamVisitor::operator()(const std::string& Value) const
 {
     return sqlite3_bind_text(Statement, ParamIndex, Value.c_str(), -1, SQLITE_TRANSIENT);
 }
 
-int SQLiteParamVisitor::operator()(std::nullptr_t) const
+int SQLite_ParamVisitor::operator()(std::nullptr_t) const
 {
     return sqlite3_bind_null(Statement, ParamIndex);
 }
@@ -252,28 +247,19 @@ int SQLiteParamVisitor::operator()(std::nullptr_t) const
 
 ////////////////////
 
-std::string SQLite_ParamValidator::NormalizeParamName(const std::string &Name)
-{
-    if (Name.empty()) return Name;
-    const char Prefix = Name[0];
-    if (Prefix == ':' || Prefix == '@' || Prefix == '$')
-    {
-        return Name.substr(1);
-    }
-    return Name;
-}
-
 std::unordered_set<std::string> SQLite_ParamValidator::GetParamNames(const std::vector<BindablePair> &NamedValues)
 {
     std::unordered_set<std::string> Names;
     for (const auto& [Name, _] : NamedValues)
     {
-        Names.emplace(NormalizeParamName(Name));
+        Names.emplace(Name); // Keep full name including prefix
     }
     return Names;
 }
 
-void SQLite_ParamValidator::CheckForParamNamePresence(sqlite3_stmt* Statement, const std::unordered_set<std::string>& ParamNames)
+void SQLite_ParamValidator::CheckIfParamsInStatement(
+    sqlite3_stmt* Statement,
+    const std::unordered_set<std::string>& ParamNames)
 {
     const int ParamCount = sqlite3_bind_parameter_count(Statement);
     for (int i = 1; i <= ParamCount; ++i)
@@ -281,23 +267,29 @@ void SQLite_ParamValidator::CheckForParamNamePresence(sqlite3_stmt* Statement, c
         const char* ParamName = sqlite3_bind_parameter_name(Statement, i);
         if (ParamName == nullptr || ParamName[0] == '\0') continue;
 
-        const std::string NormalizedParamName = NormalizeParamName(ParamName);
-
-        CONFIRMS(ParamNames.contains(NormalizedParamName),
+        CONFIRMS(ParamNames.contains(ParamName),
             "Param name {} is not provided", ParamName);
     }
 }
 
-void SQLite_ParamValidator::ValidateParamNames(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
+void SQLite_ParamValidator::BindParamsByName(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
 {
+    CONFIRM(Statement);
+    CONFIRM(!NamedValues.empty());
+
+    const int ParamCount = sqlite3_bind_parameter_count(Statement);
+    CONFIRM(ParamCount > 0);
+
     const std::unordered_set<std::string> ProvidedNames = GetParamNames(NamedValues);
-    CheckForParamNamePresence(Statement, ProvidedNames);
+    CheckIfParamsInStatement(Statement, ProvidedNames);
 }
 
 int SQLite_NamedParamBinder::BindOneParam(sqlite3_stmt* Statement, const int ParamIndex, const BindableValue& Value)
 {
-    return std::visit(SQLiteParamVisitor(Statement, ParamIndex), Value);
+    return std::visit(SQLite_ParamVisitor(Statement, ParamIndex), Value);
 }
+
+///////////////////
 
 void SQLite_NamedParamBinder::PrepareStatementForBinding(sqlite3_stmt* Statement)
 {
@@ -310,26 +302,52 @@ void SQLite_NamedParamBinder::PrepareStatementForBinding(sqlite3_stmt* Statement
         "Error [{}]: Failed to clear bindings", ClearResult);
 }
 
+std::string SQLite_NamedParamBinder::NormalizeParamName(const std::string &Name)
+{
+    if (Name.empty()) return Name;
+    const char Prefix = Name[0];
+    if (Prefix == ':' || Prefix == '@' || Prefix == '$')
+    {
+        return Name.substr(1);
+    }
+    return Name;
+}
+
+int SQLite_NamedParamBinder::GetParamIndexForProvidedName(sqlite3_stmt* Statement, const std::string& ProvidedName)
+{
+    const std::string Normalized = NormalizeParamName(ProvidedName);
+
+    int ParamIndex = 0;
+
+    // Try all 3 possible prefixes
+    for (const char Prefix : {':', '@', '$'})
+    {
+        const std::string Prefixed = std::string(1, Prefix) + Normalized;
+        ParamIndex = sqlite3_bind_parameter_index(Statement, Prefixed.c_str());
+        if (ParamIndex != 0) break;
+    }
+
+    CONFIRMS(ParamIndex != 0,
+            "Param name {} is not provided", ProvidedName);
+
+    return ParamIndex;    
+}
+
 void SQLite_NamedParamBinder::ApplyBindablePairsToStatement(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
 {
-    for (const auto& [Name, Value] : NamedValues)
+    for (const auto& [ProvidedName, Value] : NamedValues)
     {
-        const int ParamIndex = sqlite3_bind_parameter_index(Statement, Name.c_str());
-
-        CONFIRMS(ParamIndex != 0,
-            "Param name {} is not provided", Name);
+        const int ParamIndex = GetParamIndexForProvidedName(Statement, ProvidedName);      
 
         const int BindResult = BindOneParam(Statement, ParamIndex, Value);
-
         CONFIRMS(!BindResult,
-            "Error [{}]: Failed to bind param {}", BindResult, Name);
+            "Error [{}]: Failed to bind param {}", BindResult, ProvidedName);
     }
 }
 
 void SQLite_NamedParamBinder::BindParamsByName(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
 {
-    CONFIRM(Statement);
-    SQLite_ParamValidator::ValidateParamNames(Statement, NamedValues);
+    SQLite_ParamValidator::BindParamsByName(Statement, NamedValues);
     PrepareStatementForBinding(Statement);
     ApplyBindablePairsToStatement(Statement, NamedValues);
 }

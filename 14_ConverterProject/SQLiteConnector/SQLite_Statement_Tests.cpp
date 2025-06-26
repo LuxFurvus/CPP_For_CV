@@ -18,11 +18,20 @@ TEST(SQLite_Statement, T01_UnusedTailNullOrEmpty_NoWarning)
 ////////////////////// SQLite_Statement: WarnOnUnusedTail - Warning Expected //////////////////////
 TEST(SQLite_Statement, T02_UnusedTailPresent_ShouldWarn)
 {
-    SCOPED_TRACE("WarnOnUnusedTail with non-empty tail should issue warning");
+    SCOPED_TRACE("/////////////// WarnOnUnusedTail with non-empty tail should issue warning ///////////////");
 
-    const char* extra = "SELECT * FROM Table; extra";
-    SQLite_Statement::WarnOnUnusedTail(extra);
+    // Подготовка строки с хвостом
+    const char* Extra = "SELECT * FROM Table; extra";
+
+    // Захват потока ошибок
+    testing::internal::CaptureStderr();
+    SQLite_Statement::WarnOnUnusedTail(Extra);
+    std::string Output = testing::internal::GetCapturedStderr();
+
+    EXPECT_NE(Output.find("Unused tail"), std::string::npos);
+    EXPECT_NE(Output.find("extra"), std::string::npos);
 }
+
 
 ////////////////////// SQLite_Statement: Prepare Valid Statement //////////////////////
 TEST(SQLite_Statement, T03_PrepareValidStatement_ShouldInitialize)
@@ -36,6 +45,7 @@ TEST(SQLite_Statement, T03_PrepareValidStatement_ShouldInitialize)
     SQLite_Statement stmt(Db, sql);
     ASSERT_NE(stmt.Get(), nullptr);
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }
 
@@ -51,6 +61,7 @@ TEST(SQLite_Statement, T04_ConstructorValidInput_ShouldInitialize)
     SQLite_Statement stmt(Db, sql);
     ASSERT_NE(stmt.Get(), nullptr);
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }
 
@@ -70,6 +81,7 @@ TEST(SQLite_Statement, T05_DestructorShouldFinalizeStatement)
     sqlite3_close(Db);
 }
 
+
 ////////////////////// SQLite_Statement: Get Returns StatementPtr //////////////////////
 TEST(SQLite_Statement, T06_GetReturnsCorrectPointer)
 {
@@ -82,6 +94,7 @@ TEST(SQLite_Statement, T06_GetReturnsCorrectPointer)
     SQLite_Statement stmt(Db, sql);
     ASSERT_EQ(stmt.Get(), stmt.Get());
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }
 
@@ -97,6 +110,7 @@ TEST(SQLite_Statement, T07_StepShouldReturnFalseWhenDone)
     SQLite_Statement stmt(Db, "DELETE FROM Person WHERE Id = 2;");
     ASSERT_FALSE(stmt.Step());
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }
 
@@ -112,8 +126,10 @@ TEST(SQLite_Statement, T08_StepShouldReturnTrueWhenRow)
     SQLite_Statement stmt(Db, "SELECT * FROM Person;");
     ASSERT_TRUE(stmt.Step());
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }
+
 
 ////////////////////// SQLite_Statement: Step Fails on Invalid Query //////////////////////
 TEST(SQLite_Statement, T09_CorruptStepShouldCrash)
@@ -144,6 +160,7 @@ TEST(SQLite_Statement, T10_ResetShouldSucceed)
     stmt.Reset(); // rewind
     ASSERT_TRUE(stmt.Step()); // should return same row again
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }
 
@@ -176,5 +193,6 @@ TEST(SQLite_Statement, T12_StepAndResetRepeatShouldWork)
     stmt.Reset();
     ASSERT_TRUE(stmt.Step());
 
+    stmt.Finalize();
     sqlite3_close(Db);
 }

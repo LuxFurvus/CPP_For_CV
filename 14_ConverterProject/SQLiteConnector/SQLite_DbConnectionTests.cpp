@@ -26,6 +26,7 @@ TEST(SQLite_DbConnection, T01_OpenReadWrite)
     }, std::runtime_error);
 }
 
+
 TEST(SQLite_DbConnection, T02_OpenReadOnly)
 {
     SCOPED_TRACE("Normal: Open connection in read-only mode");

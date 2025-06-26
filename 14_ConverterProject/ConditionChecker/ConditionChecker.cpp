@@ -31,7 +31,7 @@ void ConditionChecker::ReportConditionFailure(const char* ExprText, const char* 
     Stream << std::format("\n\n❌ Condition check failed\n"
                           "Expression  : {}\n"
                           "Location    : {} : {}\n"
-                          "ErrorMsg    : {}\n",
+                          "ErrorMsg    : [{}]\n",
                           (ExprText ? ExprText : "(null)"),
                           (File ? File : "(unknown)"), Line,
                           ErrorMsg);

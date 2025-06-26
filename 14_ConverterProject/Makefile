@@ -1,5 +1,5 @@
 # === Compiler settings ===
-CXX := g++
+CXX := g++ -std=c++23
 
 # === Static analyzers ===
 
@@ -8,15 +8,15 @@ WARNINGS_CLASSIC := -Wall -Wextra -pedantic
 USE_PIE := -fPIE -pie
 WARNINGS_AS_ERRORS := -Werror
 WARNINGS_SANITAIZER := \
-	# -fsanitize=undefined -fsanitize=address -fsanitize=leak
+	-fsanitize=undefined -fsanitize=address -fsanitize=leak
 WARNINGS_EFFC := -Weffc++
 # WARNINGS_FANALYZER := -fanalyzer
 
 # === Compiler flags ===
 
-CXXFLAGS := -std=c++26 $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNINGS_EFFC) $(WARNINGS_AS_ERRORS)
+CXXFLAGS := $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNINGS_EFFC) $(WARNINGS_AS_ERRORS)
 
-CXXFLAGS_NO_ERRORS := -std=c++26 $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNINGS_EFFC)
+CXXFLAGS_NO_ERRORS := $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNINGS_EFFC)
 
 # === Library Specific Flags ===
 
@@ -148,7 +148,7 @@ all:
 stud:
 	@clear
 	@echo "\033[1;35m\n [*] Running compilation...\n\033[0m"
-	$(CXX) $(CXXFLAGS_NO_ERRORS) studytester.cpp -o stud
+	$(CXX) $(CXXFLAGS) $(SQLITE3FLAG) studytester.cpp -o stud
 	@echo "\033[1;35m\n [*] Compiled binary output...\n\033[0m"
 	@./stud; rm -f stud
 	@echo "\033[1;35m\n [*] fin...\n\033[0m"

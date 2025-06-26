@@ -3,6 +3,51 @@
 #ifdef NoUseAnymore
 
 
+
+class SQLite_DbChecker
+{
+    friend class SQLiteConnector_DbChecker_Test;
+
+    SQLite_DbChecker() = delete;
+
+public:
+    static void CheckResult(const int ResultCode, const char *OperatonType);
+    static void CheckResult(sqlite3 *DbHandle, const int ResultCode, const char *OperatonType);
+    static void WarnIfFalse(const bool Condition, const char* WarningMsg);
+};
+
+
+////////////////////
+
+void SQLite_DbChecker::CheckResult(const int ResultCode, const char* OperationType)
+{
+    if (ResultCode == SQLITE_OK) return;
+    CONFIRMS(false, "ErrorCode: {}, Operation: [{}]", ResultCode, OperationType);
+}
+
+void SQLite_DbChecker::CheckResult(sqlite3* DbHandle, const int ResultCode, const char* OperationType)
+{
+    if (ResultCode == SQLITE_OK) return;
+    CONFIRMS(OperationType, "OperationType message is null");
+
+    const int ErrorCode = sqlite3_extended_errcode(DbHandle);
+    CONFIRMS(false,
+        "ErrorCode: {}, Operation: [{}]: {}", ErrorCode, OperationType, sqlite3_errmsg(DbHandle));
+}
+
+void SQLite_DbChecker::WarnIfFalse(const bool Condition, const char* WarningMsg)
+{
+    if (Condition) return;
+    CONFIRM(WarningMsg);
+    std::print(std::cerr, "Warning: {}\n", WarningMsg);
+}
+
+
+
+
+
+
+
 TEST(SQLite_DbChecker, CheckResult_OK) {
     sqlite3* db = nullptr;
     EXPECT_NO_THROW(SQLite_DbChecker::CheckResult(db, SQLITE_OK, "test"));
