@@ -7,9 +7,13 @@ SRC_FILES := \
 	SQLiteConnector/SQLite_ConnectionSentinel_Tests.cpp \
 	SQLiteConnector/SQLite_ParamVisitor_Tests.cpp \
 	SQLiteConnector/SQLite_NamedParamBinder_Tests.cpp \
+	SQLiteConnector/SQLite_FieldReader_Tests.cpp \
+	SQLiteConnector/SQLite_Executor_Tests.cpp \
 	
 
-DEP_MODULES := ConditionChecker
+DEP_MODULES := \
+	ConditionChecker \
+	SQLGenerals
 
 EXTRA_LDFLAGS := -lsqlite3
 

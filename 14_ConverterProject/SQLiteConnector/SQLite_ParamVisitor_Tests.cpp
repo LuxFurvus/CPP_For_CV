@@ -384,3 +384,252 @@ TEST(SQLite_ParamVisitor, T18_BindOverwriteSameParamShouldUseLastValue)
 
     sqlite3_close(Db);
 }
+
+
+
+// Class: SQLite_BlobTestHelper
+// --------------------------------------------------------------------------
+class SQLite_BlobTestHelper
+{
+public:
+    static inline sqlite3* TestDb = nullptr;
+    static inline sqlite3_stmt* TestStmt = nullptr;
+
+    static void OpenDatabase()
+    {
+        int rc = sqlite3_open(":memory:", &TestDb);
+        ASSERT_EQ(rc, SQLITE_OK);
+    }
+
+    static void CloseDatabase()
+    {
+        sqlite3_close(TestDb);
+        TestDb = nullptr;
+    }
+
+    static void CreateTestSchema()
+    {
+        int rc = sqlite3_exec(TestDb, "CREATE TABLE blob_table(data BLOB);", nullptr, nullptr, nullptr);
+        ASSERT_EQ(rc, SQLITE_OK);
+    }
+
+    static void PrepareStatement()
+    {
+        int rc = sqlite3_prepare_v2(TestDb, "INSERT INTO blob_table(data) VALUES(?);", -1, &TestStmt, nullptr);
+        ASSERT_EQ(rc, SQLITE_OK);
+    }
+
+    static void FinalizeStatement()
+    {
+        sqlite3_finalize(TestStmt);
+        TestStmt = nullptr;
+    }
+
+    static int BindBlobToStmt(const std::vector<uint8_t>& Blob)
+    {
+        SQLite_ParamVisitor Visitor(TestStmt, 1);
+        return Visitor(Blob);
+    }
+};
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC01_EmptyBlob
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC01_EmptyBlob)
+{
+    SCOPED_TRACE("TC01_EmptyBlob: Bind empty vector to SQLite statement");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob{};
+    int Result = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    EXPECT_EQ(Result, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC02_SmallBlob
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC02_SmallBlob)
+{
+    SCOPED_TRACE("TC02_SmallBlob: Bind small non-empty binary data");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob{0x01, 0x02, 0x03};
+    int Result = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    EXPECT_EQ(Result, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC03_NullBytes
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC03_NullBytes)
+{
+    SCOPED_TRACE("TC03_NullBytes: Bind binary data with null bytes in the middle");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob{0x00, 0x11, 0x00, 0xFF};
+    int Result = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    EXPECT_EQ(Result, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC04_LargeBlob
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC04_LargeBlob)
+{
+    SCOPED_TRACE("TC04_LargeBlob: Bind large blob (~1 MB)");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob(1024 * 1024, 0x7F);
+    int Result = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    EXPECT_EQ(Result, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC05_MaxIntBlob
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC05_MaxIntBlob)
+{
+    SCOPED_TRACE("TC05_MaxIntBlob: Attempt to bind blob of size INT_MAX - 1");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob;
+    try
+    {
+        Blob.resize(static_cast<size_t>(INT_MAX) - 1, 0xAA);
+    }
+    catch (const std::bad_alloc&)
+    {
+        GTEST_SKIP() << "System does not have enough memory to run this test.";
+    }
+
+    int Result = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    EXPECT_NE(Result, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC06_NullStmt
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC06_NullStmt)
+{
+    SCOPED_TRACE("TC06_NullStmt: Constructor should throw on null sqlite3_stmt*");
+
+    sqlite3_stmt* NullStmt = nullptr;
+
+    EXPECT_THROW({
+        SQLite_ParamVisitor Visitor(NullStmt, 1);
+    }, std::runtime_error);
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC07_InvalidIndex
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC07_InvalidIndex)
+{
+    SCOPED_TRACE("TC07_InvalidIndex: Constructor should throw on ParamIndex <= 0");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    EXPECT_THROW({
+        SQLite_ParamVisitor Visitor(SQLite_BlobTestHelper::TestStmt, 0);
+    }, std::runtime_error);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC08_MultipleBind
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC08_MultipleBind)
+{
+    SCOPED_TRACE("TC08_MultipleBind: Bind two blobs consecutively");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob1{0x11, 0x22};
+    std::vector<uint8_t> Blob2{0x33, 0x44};
+
+    int Result1 = SQLite_BlobTestHelper::BindBlobToStmt(Blob1);
+    EXPECT_EQ(Result1, SQLITE_OK);
+
+    int Result2 = SQLite_BlobTestHelper::BindBlobToStmt(Blob2);
+    EXPECT_EQ(Result2, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC09_NonUTF8Data
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC09_NonUTF8Data)
+{
+    SCOPED_TRACE("TC09_NonUTF8Data: Bind binary data that is invalid UTF-8");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob{0xFF, 0xFE, 0xFD};
+    int Result = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    EXPECT_EQ(Result, SQLITE_OK);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}
+
+// --------------------------------------------------------------------------
+// TEST CASE: TC10_Persistent
+// --------------------------------------------------------------------------
+TEST(SQLite_ParamVisitor, TC10_Persistent)
+{
+    SCOPED_TRACE("TC10_Persistent: Bind blob and execute sqlite3_step");
+
+    SQLite_BlobTestHelper::OpenDatabase();
+    SQLite_BlobTestHelper::CreateTestSchema();
+    SQLite_BlobTestHelper::PrepareStatement();
+
+    std::vector<uint8_t> Blob{0xAA, 0xBB};
+    int BindResult = SQLite_BlobTestHelper::BindBlobToStmt(Blob);
+    ASSERT_EQ(BindResult, SQLITE_OK);
+
+    int StepResult = sqlite3_step(SQLite_BlobTestHelper::TestStmt);
+    EXPECT_EQ(StepResult, SQLITE_DONE);
+
+    SQLite_BlobTestHelper::FinalizeStatement();
+    SQLite_BlobTestHelper::CloseDatabase();
+}

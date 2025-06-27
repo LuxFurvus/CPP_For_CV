@@ -1,0 +1,40 @@
+#pragma once
+
+#ifndef SQL_GENERALS_H
+#define SQL_GENERALS_H
+
+////////
+#include "../ConditionChecker/ConditionChecker.h"
+
+using FieldValue = std::variant<int64_t, double, std::string, std::vector<uint8_t>, std::nullptr_t>;
+using TableValues1D = std::vector<FieldValue>;
+using TableValues2D = std::vector<TableValues1D>;
+
+enum class SQL_FieldType
+{
+    Integer = 1,
+    Float = 2,
+    Text = 3,
+    Blob = 4,
+    Null = 5
+};
+
+class SQL_TableValues2D
+{
+public:
+    TableValues2D TableData;
+    
+public:
+
+    SQL_TableValues2D();
+    SQL_TableValues2D(const TableValues2D& InTableData);
+    SQL_TableValues2D(TableValues2D&& InTableData) noexcept;
+
+    std::pair<int, int> GetSize() const;
+    FieldValue GetField(int RowIndex, int ColumnIndex) const;
+
+    bool IsEmpty() const;
+    bool IsFieldOfType(int RowIndex, int ColumnIndex, SQL_FieldType FieldType) const;
+};
+
+#endif // SQL_GENERALS_H

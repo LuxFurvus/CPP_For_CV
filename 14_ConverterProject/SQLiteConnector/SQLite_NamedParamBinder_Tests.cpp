@@ -49,7 +49,7 @@ protected:
         ASSERT_EQ(Result, SQLITE_OK);
     }
 
-    void SetPair(const std::string& Name, const BindableValue& Value)
+    void SetPair(const std::string& Name, const FieldValue& Value)
     {
         Pairs.emplace_back(Name, Value);
     }

@@ -6,7 +6,8 @@ CXX := g++ -std=c++23
 WARNINGS_BASE := -g -O0 -fno-omit-frame-pointer
 WARNINGS_CLASSIC := -Wall -Wextra -pedantic
 USE_PIE := -fPIE -pie
-WARNINGS_AS_ERRORS := -Werror
+WARNINGS_AS_ERRORS := \
+	-Werror
 WARNINGS_SANITAIZER := \
 	-fsanitize=undefined -fsanitize=address -fsanitize=leak
 WARNINGS_EFFC := -Weffc++
@@ -15,8 +16,6 @@ WARNINGS_EFFC := -Weffc++
 # === Compiler flags ===
 
 CXXFLAGS := $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNINGS_EFFC) $(WARNINGS_AS_ERRORS)
-
-CXXFLAGS_NO_ERRORS := $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNINGS_EFFC)
 
 # === Library Specific Flags ===
 

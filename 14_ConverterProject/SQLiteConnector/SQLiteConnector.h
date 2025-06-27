@@ -14,12 +14,18 @@
 #include <sqlite3.h>
 ////////
 #include "../ConditionChecker/ConditionChecker.h"
-
+#include "../SQLGenerals/SQLGenerals.h"
 
 ///////////////////////////////
 
 
 class SQLite_Statement;
+
+using BindablePair = std::pair<std::string, FieldValue>;
+
+
+///////////////////////////////
+
 
 class SQLite_ConnectionSentinel
 {
@@ -49,17 +55,7 @@ public:
 struct StatementCreationKit
 {
     friend class SQLite_DbConnection;
-    friend class SQLite_ConnectionSentinel_T01_RegisterAddsPointer_Test;
-    friend class SQLite_ConnectionSentinel_T02_UnregisterRemovesPointer_Test;
-    friend class SQLite_ConnectionSentinel_T03_DoubleRegisterHasSingleEntry_Test;
-    friend class SQLite_ConnectionSentinel_T04_DoubleUnregisterSafe_Test;
-    friend class SQLite_ConnectionSentinel_T05_InvalidateAllClearsSet_Test;
-    friend class SQLite_ConnectionSentinel_T06_RegisterAfterInvalidateWorks_Test;
-    friend class SQLite_ConnectionSentinel_T07_RegisterAndDestroyUnregistersAutomatically_Test;
-    friend class SQLite_ConnectionSentinel_T08_DestructorCallsInvalidateAll_Test;
-    friend class SQLite_ConnectionSentinel_T09_ThreadSafetyParallelRegisterUnregister_Test;
-    friend class SQLite_ConnectionSentinel_T13_NullptrSentinelSafe_Test;
-    friend class SQLite_ConnectionSentinel_T15_ThreadSafetyConcurrentAccess_Test;
+    #include "SQLite_TestFriends.inl"
     
 private:
     StatementCreationKit(std::weak_ptr<SQLite_ConnectionSentinel> Sentinel, sqlite3* DbHandle) : Sentinel(Sentinel), DbHandle(DbHandle) {}
@@ -81,7 +77,7 @@ public:
 
 class SQLite_DbConnection
 {
-    friend class SQLite_DbConnection_T12_CorruptGetShouldCrash_Test;
+    #include "SQLite_TestFriends.inl"
 
     SQLite_DbConnection() = delete;
     SQLite_DbConnection(const SQLite_DbConnection&) = delete;
@@ -95,14 +91,14 @@ private:
     std::shared_ptr<SQLite_ConnectionSentinel> Sentinel;
 
 private:
-    void SetupConnection(const char* WayToDb, const bool IsReadOnly, const bool EnableSentinel);
+    void SetupConnection(const std::string& WayToDb, const bool IsReadOnly, const bool EnableSentinel);
 
     void CheckOpenResult(const int OpenResult);
 
     void CloseConnection();
 
 public:
-    SQLite_DbConnection(const char* WayToDb, const bool IsReadOnly, const bool EnableSentinel = true);
+    SQLite_DbConnection(const std::string& WayToDb, const bool IsReadOnly, const bool EnableSentinel = true);
     ~SQLite_DbConnection();
 
     sqlite3* Get() const;
@@ -116,15 +112,10 @@ public:
 class SQLite_Statement
 {
     friend class SQLite_ConnectionSentinel;
-    friend class SQLite_Statement_T01_UnusedTailNullOrEmpty_NoWarning_Test;
-    friend class SQLite_Statement_T02_UnusedTailPresent_ShouldWarn_Test;
-    friend class SQLite_ConnectionSentinel_T14_FinalizeFromSentinelIdempotent_Test;
+    #include "SQLite_TestFriends.inl"
 
     SQLite_Statement(const SQLite_Statement&) = delete;
     SQLite_Statement& operator=(const SQLite_Statement&) = delete;
-
-    SQLite_Statement(SQLite_Statement&& Other) noexcept = delete;
-    SQLite_Statement& operator=(SQLite_Statement&& Other) noexcept = delete;
 
 private:
     sqlite3* DbHandle = nullptr;
@@ -132,14 +123,17 @@ private:
     std::weak_ptr<SQLite_ConnectionSentinel> Sentinel;
 
 private:
-    static void WarnOnUnusedTail(const char* UnusedTail);
-    void PrepareStatement(sqlite3* DbHandleParam, const char* SqlQuery);
+    static void WarnOnUnusedTail(const std::string& UnusedTail);
+    void PrepareStatement(sqlite3* DbHandleParam, const std::string& SqlQuery);
     void RegisterInSentinel(std::weak_ptr<SQLite_ConnectionSentinel> Sentinel);
     void UnRegisterFromSentinel();
 
 public:
-    SQLite_Statement(sqlite3* DbHandleParam, const char* SqlQuery);
-    SQLite_Statement(const StatementCreationKit& Kit, const char* SqlQuery);
+    SQLite_Statement(sqlite3* DbHandleParam, const std::string& SqlQuery);
+    SQLite_Statement(const StatementCreationKit& Kit, const std::string& SqlQuery);
+
+    SQLite_Statement(SQLite_Statement&& Other) noexcept;
+    SQLite_Statement& operator=(SQLite_Statement&& Other) noexcept;
 
     ~SQLite_Statement();
 
@@ -169,6 +163,7 @@ public:
     int operator()(const int Value) const;
     int operator()(const double Value) const;
     int operator()(const std::string& Value) const;
+    int operator()(const std::vector<uint8_t>& Value) const;
     int operator()(std::nullptr_t) const;
 };
 
@@ -176,12 +171,10 @@ public:
 ///////////////////
 
 
-using BindableValue = std::variant<int64_t, double, std::string, std::nullptr_t>;
-using BindablePair = std::pair<std::string, std::variant<int64_t, double, std::string, std::nullptr_t>>;
-
 class SQLite_ParamValidator
 {
     friend class SQLite_NamedParamBinder;
+    SQLite_ParamValidator() = delete;
 private:
     static std::string NormalizeParamName(const std::string& Name);
     static std::unordered_set<std::string> GetParamNames(const std::vector<BindablePair>& NamedValues);
@@ -193,11 +186,12 @@ private:
 class SQLite_NamedParamBinder
 {
     friend class SQLite_NamedParamBinderTest_T08_InvalidParamIndexShouldThrow_Test;
+    SQLite_NamedParamBinder() = delete;
 private:
     static void PrepareStatementForBinding(sqlite3_stmt* Statement);
     static std::string NormalizeParamName(const std::string &Name);
-    static int GetParamIndexForProvidedName(sqlite3_stmt *Statement, const std::string &Name);
-    static int BindOneParam(sqlite3_stmt *Statement, int ParamIndex, const BindableValue &Value);
+    static int GetParamIndexForProvidedName(sqlite3_stmt *Statement, const std::string &ProvidedName);
+    static int BindOneParam(sqlite3_stmt *Statement, int ParamIndex, const FieldValue &Value);
     static void ApplyBindablePairsToStatement(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues);
 
 public:
@@ -206,6 +200,83 @@ public:
 
 
 ///////////////////
+
+
+class SQLite_FieldReader
+{
+    SQLite_FieldReader() = delete;
+
+private:
+
+    static int64_t ExtractInteger(sqlite3_stmt* Statement, int ColumnIndex);
+    static double ExtractDouble(sqlite3_stmt* Statement, int ColumnIndex);
+    static std::string ExtractText(sqlite3_stmt* Statement, int ColumnIndex);
+    static std::vector<uint8_t> ExtractBlob(sqlite3_stmt* Statement, int ColumnIndex);
+
+    static void ValidateStatementReadiness(sqlite3_stmt* Statement);
+    static void ValidateColumnIndex(sqlite3_stmt* Statement, int ColumnIndex);
+    static void ValidateParams(sqlite3_stmt* Statement, int ColumnIndex);
+
+public:
+    static FieldValue GetFieldValue(sqlite3_stmt* Statement, int ColumnIndex);
+};
+
+
+///////////////////
+
+
+class SQLite_Executor
+{
+    SQLite_Executor() = delete;
+
+private:
+
+    static TableValues1D GetOneRow(sqlite3_stmt* RawStmt, const int ColumnCount)
+    {
+        TableValues1D Row;
+
+        for (int ColumnIndex = 0; ColumnIndex < ColumnCount; ++ColumnIndex)
+        {
+            Row.emplace_back(SQLite_FieldReader::GetFieldValue(RawStmt, ColumnIndex));
+        }
+
+        return Row;
+    }
+
+    static SQL_TableValues2D GetQueryResult(const SQLite_Statement& Statement)
+    {
+        CONFIRM(Statement.IsValid());
+
+        sqlite3_stmt* RawStmt = Statement.Get();
+        CONFIRMS(RawStmt, "RawStmt is not valid.");
+
+        TableValues2D ResultValues2D;
+
+        const int ColumnCount = sqlite3_column_count(RawStmt);
+
+        while (Statement.Step())
+        {
+            ResultValues2D.emplace_back(GetOneRow(RawStmt, ColumnCount));
+        }
+
+        return ResultValues2D;
+    }
+
+public:
+
+    static SQL_TableValues2D ExecuteQuery(const std::string& DbPath, const std::string& Query)
+    {
+        CONFIRM(!DbPath.empty());
+        CONFIRM(!Query.empty());
+
+        SQLite_DbConnection Connection(DbPath.c_str(), false, true);
+        StatementCreationKit Kit = Connection.MakeStatementKit();
+        SQLite_Statement Statement(Kit, Query.c_str());
+        CONFIRM(Statement.IsValid());
+
+        return GetQueryResult(Statement);
+    }
+};
 
 
 #endif // SQLITE_CONNECTOR_H

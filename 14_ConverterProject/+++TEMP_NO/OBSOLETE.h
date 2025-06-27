@@ -236,7 +236,7 @@ TEST(SQLiteConnector, SQLite_DbChecker)
 
 
 
-    static void BindParamsByIndex(sqlite3_stmt* Statement, const std::vector<BindableValue>& BindingValues)
+    static void BindParamsByIndex(sqlite3_stmt* Statement, const std::vector<FieldValue>& BindingValues)
     {
         CONFIRM(Statement != nullptr);
         CONFIRM(IsCorrectBindableParamNumber(Statement, BindingValues));
@@ -244,14 +244,14 @@ TEST(SQLiteConnector, SQLite_DbChecker)
         PrepareStatementForBinding(Statement);
 
         int ParamIndex = 1;
-        for (const BindableValue& Value : BindingValues)
+        for (const FieldValue& Value : BindingValues)
         {
             const int BindResult = BindOneParam(Statement, ParamIndex++, Value);
             SQLite_DbChecker::CheckResult(BindResult, "BindOneParam");
         }
     }
 
-    static bool IsCorrectBindableParamNumber(sqlite3_stmt* Statement, const std::vector<BindableValue>& BindingValues)
+    static bool IsCorrectBindableParamNumber(sqlite3_stmt* Statement, const std::vector<FieldValue>& BindingValues)
     {
         const size_t BindableParamNumber = GetBindableParamNumber(Statement);
         return BindingValues.size() == BindableParamNumber;

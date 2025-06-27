@@ -118,7 +118,7 @@ TEST(SQLite_DbConnection, T06_NullptrPath)
 {
     SCOPED_TRACE("Invalid: Pass nullptr as DB path");
     EXPECT_THROW({
-        SQLite_DbConnection conn(nullptr, false);
+        SQLite_DbConnection conn({}, false);
     }, std::runtime_error);
 }
 
