@@ -6,10 +6,14 @@ CXX := g++ -std=c++23
 WARNINGS_BASE := -g -O0 -fno-omit-frame-pointer
 WARNINGS_CLASSIC := -Wall -Wextra -pedantic
 USE_PIE := -fPIE -pie
+
 WARNINGS_AS_ERRORS := \
 	-Werror
+
 WARNINGS_SANITAIZER := \
-	-fsanitize=undefined -fsanitize=address -fsanitize=leak
+	-fsanitize=undefined -fsanitize=address -fsanitize=leak \
+	# -fsanitize=thread
+
 WARNINGS_EFFC := -Weffc++
 # WARNINGS_FANALYZER := -fanalyzer
 
@@ -20,27 +24,28 @@ CXXFLAGS := $(WARNINGS_BASE) $(WARNINGS_CLASSIC) $(WARNINGS_SANITAIZER) $(WARNIN
 # === Library Specific Flags ===
 
 LDFLAGS := -lgtest -lgtest_main -pthread
+
 SQLITE3FLAG := -lsqlite3
+
 
 
 
 # ===# ===# ===# ===# ===# ===
 # === Module discovery ===
-MODULE_DIRS := $(wildcard */)
-MODULES := $(patsubst %/,%,$(MODULE_DIRS))
+MODULE_DIRS := $(wildcard src/*/)
+MODULES := $(patsubst src/%/,%,$(MODULE_DIRS))
 
 # === Collected files and flags ===
 ALL_SRC_FILES :=
 ALL_EXTRA_LDFLAGS :=
 VISITED_MODULES :=
 
-# === Module loader with variable prefixing ===
+# === Module resolution macro ===
 define resolve_module
 $(info Resolving module: $(1))
-$(eval include $(1)/Module.mk)
+$(eval include src/$(1)/Module.mk)
 
-# Prefix variables with module name
-$(eval SRC_FILES_$(1) := $(SRC_FILES))
+$(eval SRC_FILES_$(1) := $(addprefix src/$(1)/,$(SRC_FILES)))
 $(eval DEP_MODULES_$(1) := $(DEP_MODULES))
 $(eval EXTRA_LDFLAGS_$(1) := $(EXTRA_LDFLAGS))
 
@@ -51,6 +56,8 @@ $(foreach dep,$(DEP_MODULES_$(1)),$(call resolve_module,$(dep))) \
 $(eval ALL_SRC_FILES += $(SRC_FILES_$(1))) \
 $(eval ALL_EXTRA_LDFLAGS += $(EXTRA_LDFLAGS_$(1))) )
 endef
+
+
 
 
 # ===# ===# ===# ===# ===# ===#
@@ -86,27 +93,26 @@ analyze-clang:
 	@rm -f main-clang-analysis
 
 
+
+
 # ===# ===# ===# ===# ===# ===#
 # === Run specific module (Unity Build & Non-Unity Build) ===
-run_nonunity:
+
+run_old:
 	@clear
 	$(call resolve_module,$(MODULE))
-	@echo "\033[1;35m\n [+] Compiling $(MODULE).test with sources:\n\033[0m"
+
+	@echo "\033[1;35m\n [*] Compiling $(MODULE).test with individual source files:\n\033[0m"
 	@for f in $(sort $(ALL_SRC_FILES)); do echo "    $$f"; done
 
-	@echo "\033[1;35m\n [*] Running compilation...\n\033[0m"
-	@{ \
-		START=$$(date +%s); \
-		$(CXX) $(CXXFLAGS) $(sort $(ALL_SRC_FILES)) $(LDFLAGS) $(ALL_EXTRA_LDFLAGS) -o $(MODULE).test; \
-		END=$$(date +%s); \
-		echo "\033[1;36m\t [*] Compilation completed in $$((END - START)) seconds.\033[0m"; \
-	}
-
-	@echo "\033[1;35m\n [*] Running test binary...\n\033[0m"
-	@./$(MODULE).test
-
-	@echo "\033[1;35m\n [*] Cleaning up...\n\033[0m"
-	@rm -f $(MODULE).test
+	@echo "\033[1;35m\n [*] Running compilation and test...\n\033[0m"; \
+	START=$$(date +%s); \
+	trap 'echo "\033[1;35m\n [*] Cleaning up...\n\033[0m"; rm -f $(MODULE).test' EXIT; \
+	$(CXX) $(CXXFLAGS) $(sort $(ALL_SRC_FILES)) $(LDFLAGS) $(ALL_EXTRA_LDFLAGS) -o $(MODULE).test && \
+	END=$$(date +%s) && \
+	echo "\033[1;36m\t [*] Compilation completed in $$((END - START)) seconds.\033[0m" && \
+	echo "\033[1;35m\n [*] Running test binary...\n\033[0m" && \
+	./$(MODULE).test
 
 run:
 	@clear
@@ -118,22 +124,18 @@ run:
 		echo "#include \"$$f\"" >> UnityBuild.cpp; \
 	done
 
-	@echo "\033[1;35m\n [*] Unity sources:\n\033[0m"
-	@cat UnityBuild.cpp | grep '#include' | sed 's/^/    /'
+	@NUM_INCLUDES=$$(grep -c '^#include' UnityBuild.cpp); \
+	echo "\033[1;35m\n [*] Unity sources ($$NUM_INCLUDES):\n\033[0m"; \
+	grep '^#include' UnityBuild.cpp | sed 's/^/    /'
 
-	@echo "\033[1;35m\n [*] Running compilation...\n\033[0m"
-	@{ \
-		START=$$(date +%s); \
-		$(CXX) $(CXXFLAGS) UnityBuild.cpp $(LDFLAGS) $(ALL_EXTRA_LDFLAGS) -o $(MODULE).test; \
-		END=$$(date +%s); \
-		echo "\033[1;36m\t [*]Compilation completed in $$((END - START)) seconds.\033[0m"; \
-	}
-
-	@echo "\033[1;35m\n [*] Running test binary...\n\033[0m"
-	@./$(MODULE).test
-
-	@echo "\033[1;35m\n [*] Cleaning up...\n\033[0m"
-	@rm -f UnityBuild.cpp $(MODULE).test
+	@echo "\033[1;35m\n [*] Running compilation and test...\n\033[0m"; \
+	START=$$(date +%s); \
+	trap 'echo "\033[1;35m\n [*] Cleaning up...\n\033[0m"; rm -f UnityBuild.cpp $(MODULE).test' EXIT; \
+	$(CXX) $(CXXFLAGS) UnityBuild.cpp $(LDFLAGS) $(ALL_EXTRA_LDFLAGS) -o $(MODULE).test && \
+	END=$$(date +%s) && \
+	echo "\033[1;36m\t [*] Compilation completed in $$((END - START)) seconds.\033[0m" && \
+	echo "\033[1;35m\n [*] Running test binary...\n\033[0m" && \
+	./$(MODULE).test
 
 # === Run all testable modules ===
 all:
