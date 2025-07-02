@@ -51,7 +51,9 @@ struct SQLite_StatementCreationKit
     #include "SQLite_TestFriends.inl"
     
 private:
-    SQLite_StatementCreationKit(std::weak_ptr<SQLite_StatementSentinel> Sentinel, sqlite3* DbHandle) : Sentinel(Sentinel), DbHandle(DbHandle) {}
+    SQLite_StatementCreationKit(
+        std::weak_ptr<SQLite_StatementSentinel> InSentinel, sqlite3* InDbHandle)
+        : Sentinel(InSentinel), DbHandle(InDbHandle) {}
 
 public:
     std::weak_ptr<SQLite_StatementSentinel> Sentinel;
@@ -86,7 +88,7 @@ private:
 private:
     static void WarnOnUnusedTail(const std::string& UnusedTail);
     void PrepareStatement(sqlite3* DbHandleParam, const std::string& SqlQuery);
-    void RegisterInSentinel(std::weak_ptr<SQLite_StatementSentinel> Sentinel);
+    void RegisterInSentinel(std::weak_ptr<SQLite_StatementSentinel> InSentinel);
     void UnRegisterFromSentinel();
 
 public:

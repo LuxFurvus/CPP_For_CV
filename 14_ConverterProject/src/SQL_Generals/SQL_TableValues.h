@@ -45,9 +45,9 @@ public:
     
 public:
 
-    SQL_TableValues2D();
-    SQL_TableValues2D(const TableValues2D& InTableData);
-    SQL_TableValues2D(TableValues2D&& InTableData) noexcept;
+    explicit SQL_TableValues2D();
+    explicit SQL_TableValues2D(const TableValues2D& InTableData);
+    explicit SQL_TableValues2D(TableValues2D&& InTableData) noexcept;
 
     std::pair<int, int> GetSize() const;
     FieldValue GetField(int RowIndex, int ColumnIndex) const;

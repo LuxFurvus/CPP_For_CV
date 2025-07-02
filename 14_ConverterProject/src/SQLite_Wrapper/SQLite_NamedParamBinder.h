@@ -22,10 +22,10 @@ using BindablePair = std::pair<std::string, FieldValue>;
 ///////////////////
 
 
-class SQLite_ParamValidator
+class SQLite_NamedParamBinderValidator
 {
     friend class SQLite_NamedParamBinder;
-    SQLite_ParamValidator() = delete;
+    SQLite_NamedParamBinderValidator() = delete;
 
 private:
     static std::string NormalizeParamName(const std::string& Name);
@@ -33,11 +33,11 @@ private:
     static std::unordered_set<std::string> GetParamNames(
             const std::vector<BindablePair>& NamedValues);
     
-            static void CheckIfParamsInStatement(
+    static void CheckIfParamsInStatement(
         sqlite3_stmt* Statement, const std::unordered_set<std::string>& ParamNames);
 
 private:
-    static void BindParamsByName(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues);
+    static void Validate(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues);
 };
 
 
@@ -53,7 +53,7 @@ private:
     int ParamIndex;
 
 public:
-    SQLite_ParamVisitor(sqlite3_stmt* Statement, const int ParamIndex);
+    SQLite_ParamVisitor(sqlite3_stmt* InStatement, const int InParamIndex);
 
     int operator()(const int64_t Value) const;
     int operator()(const int Value) const;

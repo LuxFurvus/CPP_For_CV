@@ -105,7 +105,8 @@
 namespace SQLite_Executor_TestNS
 {
     const std::string DbPath = "temp_t01.db";
-
+    
+    void CreateTempDb();
     void CreateTempDb()
     {
         sqlite3* DbHandle = nullptr;
@@ -114,7 +115,8 @@ namespace SQLite_Executor_TestNS
         ASSERT_EQ(OpenResult, SQLITE_OK);
         sqlite3_close(DbHandle);
     }
-
+    
+    void CloseTempDb();
     void CloseTempDb()
     {
         SQLite_ConnectionPool::CloseAll();

@@ -18,9 +18,9 @@ SQLite_Statement::SQLite_Statement(const SQLite_StatementCreationKit& Kit, const
 
 //\/\/\/\/\/\/\/\/\/
 
-void SQLite_Statement::RegisterInSentinel(std::weak_ptr<SQLite_StatementSentinel> Sentinel)
+void SQLite_Statement::RegisterInSentinel(std::weak_ptr<SQLite_StatementSentinel> InSentinel)
 {
-    std::shared_ptr<SQLite_StatementSentinel> SharedSentinel = Sentinel.lock();
+    std::shared_ptr<SQLite_StatementSentinel> SharedSentinel = InSentinel.lock();
     if (!SharedSentinel) return;
     SharedSentinel->Register(this);
 }

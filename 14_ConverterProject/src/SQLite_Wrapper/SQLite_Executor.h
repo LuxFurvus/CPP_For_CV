@@ -26,8 +26,8 @@ using TableValues2D = std::vector<TableValues1D>;
 class SQLite_Executor : public SQL_Executor
 {
 private:
-    TableValues1D GetOneRow(sqlite3_stmt* RawStmt, const int ColumnCount);
-    SQL_TableValues2D GetQueryResult(SQLite_Statement& Statement);
+    static TableValues1D GetOneRow(sqlite3_stmt* RawStmt, const int ColumnCount);
+    static SQL_TableValues2D GetQueryResult(SQLite_Statement& Statement);
 
 public:
     SQLite_Executor() = default;

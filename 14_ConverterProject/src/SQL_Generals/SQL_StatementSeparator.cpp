@@ -2,8 +2,8 @@
 
 #include "SQL_StatementSeparator.h"
 
-SQL_StatementSeparator::SQL_StatementSeparator(const std::string& Script)
-    : Statements(), Script(Script), Current(), State(), Index(0) {}
+SQL_StatementSeparator::SQL_StatementSeparator(const std::string& InScript)
+    : Statements(), Script(InScript), Current(), State(), Index(0) {}
 
 std::vector<std::string> SQL_StatementSeparator::SplitStatements()
 {
@@ -80,34 +80,17 @@ void SQL_StatementSeparator::HandleStatementSplit(char Ch)
     TryAddCurrentStatement();
 }
 
-bool SQL_StatementSeparator::HandleNonQuotedCommentStates(char Ch, char Next)
-{
-    if (!State.InSingleQuote && !State.InDoubleQuote)
-    {
-        if (HandleLineCommentStart(Ch, Next)) return true;
-        if (HandleBlockCommentStart(Ch, Next)) return true;
-        if (HandleBlockCommentEnd(Ch, Next)) return true;
-        if (HandleLineCommentEnd(Ch))
-        {
-            ++Index;
-            return true;
-        }
-        if (HandleCommentBody()) return true;
-    }
-    return false;
-}
-
-bool SQL_StatementSeparator::IsLineCommentStart(char Ch, char Next) const
+bool SQL_StatementSeparator::IsLineCommentStart(char Ch, char Next)
 {
     return Ch == '-' && Next == '-';
 }
 
-bool SQL_StatementSeparator::IsBlockCommentStart(char Ch, char Next) const
+bool SQL_StatementSeparator::IsBlockCommentStart(char Ch, char Next)
 {
     return Ch == '/' && Next == '*';
 }
 
-bool SQL_StatementSeparator::IsBlockCommentEnd(char Ch, char Next) const
+bool SQL_StatementSeparator::IsBlockCommentEnd(char Ch, char Next)
 {
     return Ch == '*' && Next == '/';
 }

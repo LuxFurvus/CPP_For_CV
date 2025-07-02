@@ -48,10 +48,10 @@ private:
 
     void CloseConnection() noexcept;
 
-    void VaidateDbPath(const SQLite_ConnectionCreationKit& Kit);
+    static void VaidateDbPath(const SQLite_ConnectionCreationKit& Kit);
 
 public:
-    SQLite_DbConnection(const SQLite_ConnectionCreationKit& Kit);
+    explicit SQLite_DbConnection(const SQLite_ConnectionCreationKit& Kit);
     ~SQLite_DbConnection() noexcept;
 
     sqlite3* Get() const;

@@ -27,7 +27,7 @@ private:
     size_t Index = 0;    
 
 public:
-    explicit SQL_StatementSeparator(const std::string& Script);
+    explicit SQL_StatementSeparator(const std::string& InScript);
 
     std::vector<std::string> SplitStatements();
 
@@ -36,12 +36,11 @@ private:
     void ParseAllCharacters();
     bool ProcessNextCharacter();
     void TryAddCurrentStatement();
-    std::string Trim(const std::string& Str);
+    static std::string Trim(const std::string& Str);
     void HandleStatementSplit(char Ch);
-    bool HandleNonQuotedCommentStates(char Ch, char Next);
-    bool IsLineCommentStart(char Ch, char Next) const;
-    bool IsBlockCommentStart(char Ch, char Next) const;
-    bool IsBlockCommentEnd(char Ch, char Next) const;
+    static bool IsLineCommentStart(char Ch, char Next);
+    static bool IsBlockCommentStart(char Ch, char Next);
+    static bool IsBlockCommentEnd(char Ch, char Next);
     void UpdateQuoteState(char Ch);
     bool ShouldSplitHere(char Ch) const;
     bool HandleLineCommentStart(char Ch, char Next);

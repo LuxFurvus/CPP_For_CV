@@ -54,7 +54,7 @@ SQL_TableValues2D SQLite_Executor::GetQueryResult(SQLite_Statement& Statement)
         ResultValues2D.emplace_back(GetOneRow(RawStmt, ColumnCount));
     }
 
-    return ResultValues2D;
+    return SQL_TableValues2D(ResultValues2D);
 }
 
 //\/\/\/\/\/\/\/\/\/

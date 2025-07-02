@@ -64,7 +64,7 @@ TEST_F(SQLite_NamedParamBinderTest, T01_BindAllValidParamTypes)
     PrepareStatement("SELECT :a, :b, :c, :d, :e");
 
     SetPair(":a", 42);
-    SetPair(":b", static_cast<int64_t>(1234567890123));
+    SetPair(":b", 1234567890123);
     SetPair(":c", 3.14);
     SetPair(":d", std::string("hello"));
     SetPair(":e", nullptr);

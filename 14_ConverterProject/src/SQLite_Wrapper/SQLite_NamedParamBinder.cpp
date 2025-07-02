@@ -12,7 +12,7 @@
 
 ////////////////////
 
-std::unordered_set<std::string> SQLite_ParamValidator::GetParamNames(
+std::unordered_set<std::string> SQLite_NamedParamBinderValidator::GetParamNames(
     const std::vector<BindablePair> &NamedValues)
 {
     std::unordered_set<std::string> Names;
@@ -23,7 +23,7 @@ std::unordered_set<std::string> SQLite_ParamValidator::GetParamNames(
     return Names;
 }
 
-void SQLite_ParamValidator::CheckIfParamsInStatement(
+void SQLite_NamedParamBinderValidator::CheckIfParamsInStatement(
     sqlite3_stmt* Statement,
     const std::unordered_set<std::string>& ParamNames)
 {
@@ -38,7 +38,7 @@ void SQLite_ParamValidator::CheckIfParamsInStatement(
     }
 }
 
-void SQLite_ParamValidator::BindParamsByName(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
+void SQLite_NamedParamBinderValidator::Validate(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
 {
     CONFIRM(Statement);
     CONFIRM(!NamedValues.empty());
@@ -59,8 +59,8 @@ int SQLite_NamedParamBinder::BindOneParam(sqlite3_stmt* Statement, const int Par
 ///////////////////
 
 
-SQLite_ParamVisitor::SQLite_ParamVisitor(sqlite3_stmt* Statement, const int ParamIndex)
-    : Statement(Statement), ParamIndex(ParamIndex)
+SQLite_ParamVisitor::SQLite_ParamVisitor(sqlite3_stmt* InStatement, const int InParamIndex)
+    : Statement(InStatement), ParamIndex(InParamIndex)
 {
     CONFIRM(Statement);
     CONFIRM(ParamIndex > 0);
@@ -157,9 +157,7 @@ void SQLite_NamedParamBinder::ApplyBindablePairsToStatement(
 
 void SQLite_NamedParamBinder::BindParamsByName(sqlite3_stmt* Statement, const std::vector<BindablePair>& NamedValues)
 {
-    SQLite_ParamValidator::BindParamsByName(Statement, NamedValues);
+    SQLite_NamedParamBinderValidator::Validate(Statement, NamedValues);
     PrepareStatementForBinding(Statement);
     ApplyBindablePairsToStatement(Statement, NamedValues);
 }
-
-
