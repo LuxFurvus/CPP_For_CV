@@ -1,0 +1,489 @@
+
+#include "../SubstringExtractor/SubstringExtractor.h"
+////////
+#include <string>
+#include <optional>
+#include <utility>
+////////
+#include <gtest/gtest.h>
+////////
+#include "../SubstringSearcher/SubstringSearcher.h"
+
+
+const auto FindSubstringRangeLambdaNEW = [](const FSubstringLookupTask& Task)
+{
+    auto CallSomeProtected = [](const std::string_view Text, const FSubstringRange& Range) {
+        struct Local : public SubstringExtractor {
+            auto Call(const std::string_view Text, const FSubstringRange& Range) {
+                return this->ExtractSubstringByRange(Text, Range);
+            }
+        };
+        return Local().Call(Text, Range);
+    };
+
+    const auto [Range, MatchedString] = SubstringSearcher::FindSubtringRangeByRules(Task);
+
+    const std::optional<std::string> ExtractedSubstring = CallSomeProtected(Task.Text, Range);
+
+    return std::pair<FSubstringRange, std::optional<std::string>>(Range, ExtractedSubstring);
+};
+
+
+TEST(SubstringSearcher_FindSubstringRange_Preconditions, T01_FSubstringRange_DefaultInvalidState)
+{
+    SCOPED_TRACE("T01: FSubstringRange is invalid and contains std::string::npos by default");
+    FSubstringRange Range;
+    EXPECT_TRUE(!Range.IsValid());
+    EXPECT_EQ(Range.Start, std::string::npos);
+    EXPECT_EQ(Range.End, std::string::npos);
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T01_BasicMatch_NoIgnoredRules)
+{
+    SCOPED_TRACE("T01: Simple substring match without any ignored rules");
+
+    FSubstringLookupTask Task {
+        .Text = "abcdef",
+        .Candidates = { "cde" },
+        .Rules = FIgnoredRangesRules{},
+        .StartLookupAt = 0,
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 2);
+    EXPECT_EQ(Range.End, 5);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "cde");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T02_CaseInsensitiveMatch)
+{
+    SCOPED_TRACE("T02: Match with case-insensitive setting");
+
+    FSubstringLookupTask Task {
+        .Text = "AbCdEf",
+        .Candidates = { "CDE" },
+        .Rules = FIgnoredRangesRules {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = {},
+            .bCaseInsensitive = true
+        },
+        .StartLookupAt = 0,
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 2);
+    EXPECT_EQ(Range.End, 5);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "CdE");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T03_SubstringNotFound)
+{
+    SCOPED_TRACE("T03: Substring is not present");
+
+    FSubstringLookupTask Task {
+        .Text = "abcdef",
+        .Candidates = { "xyz" },
+        .Rules = FIgnoredRangesRules{},
+        .StartLookupAt = 0,
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T04_MatchWithIgnoredChars)
+{
+    SCOPED_TRACE("T04: Ignore specific characters during comparison");
+
+    FSubstringLookupTask Task {
+        .Text = "a_b_c_d_e",
+        .Candidates = { "abcde" },
+        .Rules = FIgnoredRangesRules {
+            .IgnoredChar = [](char Ch) { return Ch == '_'; },
+            .IgnoredRangesBetween = {},
+            .bCaseInsensitive = false
+        },
+        .StartLookupAt = 0,
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 9);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "a_b_c_d_e");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T05_MatchInsideIgnoredRange_ShouldSkip)
+{
+    SCOPED_TRACE("T05: Substring occurs inside ignored range and should be skipped");
+
+    FSubstringLookupTask Task {
+        .Text = "abc(def)ghi",
+        .Candidates = { "def" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T06_MatchAfterIgnoredRange)
+{
+    SCOPED_TRACE("T06: Substring appears after ignored range, should match correctly");
+
+    FSubstringLookupTask Task {
+        .Text = "abc(def)ghi",
+        .Candidates = { "ghi" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 8);
+    EXPECT_EQ(Range.End, 11);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "ghi");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T07_EmptyText)
+{
+    SCOPED_TRACE("T07: Handle empty input text");
+
+    FSubstringLookupTask Task {
+        .Text = "",
+        .Candidates = { "abc" },
+        .Rules = {}
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T08_EmptySubstring)
+{
+    SCOPED_TRACE("T08: Handle empty substring input");
+
+    FSubstringLookupTask Task {
+        .Text = "abcdef",
+        .Candidates = { "" },
+        .Rules = {}
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T09_SubstringAcrossIgnoredRange_ShouldNotMatch)
+{
+    SCOPED_TRACE("T09: Substring partially inside ignored range should not match");
+
+    FSubstringLookupTask Task {
+        .Text = "ab[cd]efg",
+        .Candidates = { "cdef" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'[', ']'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T10_SubstringWrappedWithIgnoredRange_ShouldMatch)
+{
+    SCOPED_TRACE("T10: Match ignoring wrapped content");
+
+    FSubstringLookupTask Task {
+        .Text = "a_(B)[x]C_D",
+        .Candidates = { "ACD" },
+        .Rules = {
+            .IgnoredChar = [](char Ch) { return Ch == '_'; },
+            .IgnoredRangesBetween = { {'(', ')'}, {'[', ']'} },
+            .bCaseInsensitive = true
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 11);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "a_(B)[x]C_D");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T11_RepeatedIgnoredRangesHandledCorrectly)
+{
+    SCOPED_TRACE("T11: Multiple ignored ranges sequentially must not affect final match");
+
+    FSubstringLookupTask Task {
+        .Text = R"(a("1")("2")bcd)",
+        .Candidates = { "bcd" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'}, {'"', '"'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 11);
+    EXPECT_EQ(Range.End, 14);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "bcd");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T12_FullMatchAfterNormalization)
+{
+    SCOPED_TRACE("T12: Entire string matches after ignoring chars and ranges and lowering case");
+
+    FSubstringLookupTask Task {
+        .Text = "A_B(C)D",
+        .Candidates = { "abd" },
+        .Rules = {
+            .IgnoredChar = [](char Ch) { return Ch == '_'; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = true
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 7);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "A_B(C)D");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T13_StartsImmediatelyAfterIgnoredRange)
+{
+    SCOPED_TRACE("T13: Match should begin right after an ignored range block");
+
+    FSubstringLookupTask Task {
+        .Text = "(x)abcde",
+        .Candidates = { "abc" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 3);
+    EXPECT_EQ(Range.End, 6);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "abc");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T14_PartialRepeatingCharacters)
+{
+    SCOPED_TRACE("T14: Avoid partial match resets in repeated characters");
+
+    FSubstringLookupTask Task {
+        .Text = "aabbccddeeff",
+        .Candidates = { "bbcc" },
+        .Rules = {}
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 2);
+    EXPECT_EQ(Range.End, 6);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "bbcc");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T15_UnclosedIgnoredRange)
+{
+    SCOPED_TRACE("T15: Unclosed ignored block skips to end of text");
+
+    FSubstringLookupTask Task {
+        .Text = "abc(def",
+        .Candidates = { "f" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T16_IgnoredCharsInsideSubstring)
+{
+    SCOPED_TRACE("T16: Substring containing ignored characters should still match");
+
+    FSubstringLookupTask Task {
+        .Text = "ab_cd",
+        .Candidates = { "abcd" },
+        .Rules = {
+            .IgnoredChar = [](char Ch) { return Ch == '_'; },
+            .IgnoredRangesBetween = {},
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 5);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "ab_cd");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T17_NestedDifferentIgnoredPairs)
+{
+    SCOPED_TRACE("T17: Multiple different ignored range types should be skipped");
+
+    FSubstringLookupTask Task {
+        .Text = "a([x])bc",
+        .Candidates = { "bc" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'}, {'[', ']'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 6);
+    EXPECT_EQ(Range.End, 8);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "bc");
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T18_SubstringSplitByIgnoredRangeShouldNotMatch)
+{
+    SCOPED_TRACE("T18: Substring spanning ignored range should not match");
+
+    FSubstringLookupTask Task {
+        .Text = "ab(cd)ef",
+        .Candidates = { "cde" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T19_MatchAfterBrokenRange)
+{
+    SCOPED_TRACE("T19: Substring appears after unterminated ignored block");
+
+    FSubstringLookupTask Task {
+        .Text = "<abc def ghi",
+        .Candidates = { "ghi" },
+        .Rules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'<', '>'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T20_TextNormalizedAwayCompletely)
+{
+    SCOPED_TRACE("T20: Entire input removed by normalization — no match possible");
+
+    FSubstringLookupTask Task {
+        .Text = "(abc)",
+        .Candidates = { "a" },
+        .Rules = {
+            .IgnoredChar = [](char) { return true; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(SubstringSearcher_FindSubstringRange, T21_OverlappinIgnoreBlocks)
+{
+    SCOPED_TRACE("T21: Two overlapping ignored blocks, must parse");
+
+    FSubstringLookupTask Task {
+        .Text = R"TEXT(sometext(")" <-- issue is here!!!abc)TEXT",
+        .Candidates = { "abc" },
+        .Rules = {
+            .IgnoredRangesBetween = { {'(', ')'}, {'"', '"'} },
+        }
+    };
+
+    auto [Range, Extracted] = FindSubstringRangeLambdaNEW(Task);
+
+    EXPECT_TRUE(Range.IsValid());
+    ASSERT_TRUE(Extracted.has_value());
+
+    std::string Expected = "abc";
+    EXPECT_EQ(*Extracted, Expected);
+}
+

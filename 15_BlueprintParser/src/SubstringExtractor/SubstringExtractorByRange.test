@@ -1,0 +1,96 @@
+
+#include "../SubstringExtractor/SubstringExtractor.h"
+////////
+#include <string>
+#include <optional>
+////////
+#include <gtest/gtest.h>
+////////
+#include "../SubstringExtractor/BaseParseStructures.h"
+
+
+struct ExtractSubstringByRange : public SubstringExtractor
+{
+    static auto Call(
+        const std::string_view Text,
+        const FSubstringRange& Range)
+    {
+        return SubstringExtractor::ExtractSubstringByRange(Text, Range);
+    }
+};
+
+
+TEST(SubstringExtractor, T01_ValidRangeWithinBounds)
+{
+    SCOPED_TRACE("T01: Extract a valid substring from well-defined range");
+    FSubstringRange Range{2, 5};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    std::optional<std::string> Expected = std::make_optional<std::string>("cde");
+    EXPECT_EQ(Result, Expected);
+}
+
+TEST(SubstringExtractor, T02_EmptyRangeStartEqualsEnd)
+{
+    SCOPED_TRACE("T02: Range with identical Start and End should be invalid");
+    FSubstringRange Range{3, 3};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    EXPECT_FALSE(Result.has_value());
+}
+
+TEST(SubstringExtractor, T03_InvalidRangeStartGreaterThanEnd)
+{
+    SCOPED_TRACE("T03: Range with Start greater than End is invalid");
+    FSubstringRange Range{5, 3};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    EXPECT_FALSE(Result.has_value());
+}
+
+TEST(SubstringExtractor, T04_EndExceedsTextLength)
+{
+    SCOPED_TRACE("T04: End beyond text size should yield nullopt");
+    FSubstringRange Range{2, 10};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    EXPECT_FALSE(Result.has_value());
+}
+
+TEST(SubstringExtractor, T05_StartEqualsNpos)
+{
+    SCOPED_TRACE("T05: Start == npos should yield invalid range and nullopt result");
+    FSubstringRange Range{std::string::npos, 6};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    EXPECT_FALSE(Result.has_value());
+}
+
+TEST(SubstringExtractor, T06_EndEqualsNpos)
+{
+    SCOPED_TRACE("T06: End == npos should yield invalid range and nullopt result");
+    FSubstringRange Range{2, std::string::npos};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    EXPECT_FALSE(Result.has_value());
+}
+
+TEST(SubstringExtractor, T07_EmptyTextWithZeroRange)
+{
+    SCOPED_TRACE("T07: Empty text and zero-length range should yield nullopt");
+    FSubstringRange Range{0, 0};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("", Range);
+    EXPECT_FALSE(Result.has_value());
+}
+
+TEST(SubstringExtractor, T08_ValidExtractionAtEnd)
+{
+    SCOPED_TRACE("T08: Extract last valid character at end of string");
+    FSubstringRange Range{5, 6};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    std::optional<std::string> Expected = std::make_optional<std::string>("f");
+    EXPECT_EQ(Result, Expected);
+}
+
+TEST(SubstringExtractor, T09_ValidExtractionAtStart)
+{
+    SCOPED_TRACE("T09: Extract substring from beginning of the string");
+    FSubstringRange Range{0, 3};
+    std::optional<std::string> Result = ExtractSubstringByRange::Call("abcdef", Range);
+    std::optional<std::string> Expected = std::make_optional<std::string>("abc");
+    EXPECT_EQ(Result, Expected);
+}

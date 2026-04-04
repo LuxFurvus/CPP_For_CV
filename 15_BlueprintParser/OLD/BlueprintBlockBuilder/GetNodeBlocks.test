@@ -1,0 +1,194 @@
+#pragma once
+
+#include "../BlueprintBlockBuilder/BlueprintBlockBuilder.h"
+////////
+#include <string>
+#include <vector>
+////////
+#include <gtest/gtest.h>
+////////
+
+
+struct GetNodeBlocks : public BlueprintBlockBuilder
+{
+    static auto Call(const std::string_view FullBlueprintText)
+    {
+        return BlueprintBlockBuilder::GetNodeBlocks(FullBlueprintText);
+    }
+};
+
+
+TEST(BlueprintBlockBuilder, T01_SuperSimpleBlueprint)
+{
+    SCOPED_TRACE("T01: "
+        "IF: Basic blueprint with 2 valid blocks, "
+        "THEN: Both are extracted");
+
+    const std::string_view BlueprintText = R"TESTZ(
+        Begin Object: CustomProperties Pin1, NodeGuid=1, FunctionReference=1 :End Object
+        Begin Object: CustomProperties Pin2, NodeGuid=2, FunctionReference=2 :End Object
+    )TESTZ";
+
+    const std::vector<std::string> Result = GetNodeBlocks::Call(BlueprintText);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], 
+        "Begin Object: CustomProperties Pin1, NodeGuid=1, FunctionReference=1 :End Object");
+    EXPECT_EQ(Result[1], 
+        "Begin Object: CustomProperties Pin2, NodeGuid=2, FunctionReference=2 :End Object");
+}
+
+TEST(BlueprintBlockBuilder, T02_ExtractsTwoNodeBlocks)
+{
+    SCOPED_TRACE("T02: Full Blueprint text contains two Begin/End Object pairs");
+
+    const std::string BlueprintText = R"BLUEPRINT(
+
+Begin Object
+    Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_0" ExportPath="/Script/BlueprintGraph.K2Node_FunctionEntry'/Game/...'"
+   FunctionReference=(MemberName="BpExampleFunc")
+   NodeGuid=546E3B764F9A7281859A7492B0DD7672
+   CustomProperties Pin (PinId=648922534AFB5D01DA7FEC8E15B1AD22, PinName="then", Direction="EGPD_Output", PinType.PinCategory="exec", ...)
+End Object
+Begin Object
+    Class=/Script/BlueprintGraph.K2Node_FunctionResult Name="K2Node_FunctionResult_0" ExportPath="/Script/BlueprintGraph.K2Node_FunctionResult'/Game/...'"
+   FunctionReference=(MemberName="BpExampleFunc")
+   NodeGuid=2E07107941EA465F43EAEDB3B52902D9
+   CustomProperties Pin (PinId=27C68A2940864649FB7DE4B6BD1C990A, PinName="execute", PinType.PinCategory="exec", ...)
+End Object
+
+)BLUEPRINT";
+
+    const std::vector<std::string> Blocks = GetNodeBlocks::Call(BlueprintText);
+
+    ASSERT_EQ(Blocks.size(), 2u);
+
+    // First block checks
+    EXPECT_TRUE(Blocks[0].contains("Begin Object"));
+    EXPECT_TRUE(Blocks[0].contains("End Object"));
+    EXPECT_TRUE(Blocks[0].contains("K2Node_FunctionEntry"));
+    EXPECT_TRUE(Blocks[0].contains("CustomProperties Pin"));
+    EXPECT_TRUE(Blocks[0].contains("NodeGuid="));
+    EXPECT_TRUE(Blocks[0].contains("FunctionReference="));
+
+    // Second block checks
+    EXPECT_TRUE(Blocks[1].contains("Begin Object"));
+    EXPECT_TRUE(Blocks[1].contains("End Object"));
+    EXPECT_TRUE(Blocks[1].contains("K2Node_FunctionResult"));
+    EXPECT_TRUE(Blocks[1].contains("CustomProperties Pin"));
+    EXPECT_TRUE(Blocks[1].contains("NodeGuid="));
+    EXPECT_TRUE(Blocks[1].contains("FunctionReference="));
+}
+
+TEST(BlueprintBlockBuilder, T03_SkipsBlocksWithoutEssentialMarkers)
+{
+    SCOPED_TRACE("T03: Block with missing essential marker is skipped");
+
+    const std::string BlueprintText = R"BLUEPRINT(
+Begin Object Class=/Script/BlueprintGraph.K2Node_Void Name="K2Node_Skipped"
+   SomethingWithoutRequiredMarkers
+End Object
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_1"
+   FunctionReference=(MemberName="ValidFunc")
+   NodeGuid=11112222333344445555666677778888
+   CustomProperties Pin (PinId=ABC, PinName="X", Direction="EGPD_Output", PinType.PinCategory="exec", ...)
+End Object
+)BLUEPRINT";
+
+    const std::vector<std::string> Blocks = GetNodeBlocks::Call(BlueprintText);
+
+    ASSERT_EQ(Blocks.size(), 1u);
+    EXPECT_TRUE(Blocks[0].find("K2Node_FunctionEntry_1") != std::string::npos);
+    EXPECT_TRUE(Blocks[0].find("ValidFunc") != std::string::npos);
+    EXPECT_TRUE(Blocks[0].find("NodeGuid=") != std::string::npos);
+}
+
+TEST(BlueprintBlockBuilder, T04_EmptyInputReturnsEmpty)
+{
+    SCOPED_TRACE("T04: Empty input results in no blocks");
+
+    const std::string BlueprintText = "";
+
+    const std::vector<std::string> Blocks = GetNodeBlocks::Call(BlueprintText);
+
+    EXPECT_TRUE(Blocks.empty());
+}
+
+TEST(BlueprintBlockBuilder, T05_SingleIncompleteBlockIgnored)
+{
+    SCOPED_TRACE("T05: Only Begin Object present, missing End Object");
+
+    const std::string BlueprintText = R"BLUEPRINT(
+Begin Object Class=/Script/BlueprintGraph.K2Node_Incomplete Name="BrokenNode"
+   FunctionReference=(MemberName="BrokenFunc")
+   NodeGuid=00001111222233334444555566667777
+   CustomProperties Pin (PinId=XYZ, PinName="Broken", Direction="EGPD_Output", PinType.PinCategory="exec", ...)
+)BLUEPRINT";
+
+    const std::vector<std::string> Blocks = GetNodeBlocks::Call(BlueprintText);
+
+    EXPECT_TRUE(Blocks.empty());
+}
+
+TEST(BlueprintBlockBuilder, T06_BrokenBlueprint3Blocks)
+{
+    SCOPED_TRACE("T06: Broken, but valid Blueprint text, 3 blocks should be parsed");
+
+    const std::string BlueprintText = R"BLUEPRINT(
+
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_0" ExportPath="/Script/BlueprintGraph.K2Node_FunctionEntry'/Game/Blueprints/Meta/Controllers/MetaController_ProfileInitializer.MetaController_ProfileInitializer:BpExampleFunc.K2Node_FunctionEntry_0'"
+   ExtraFlags=1543634944
+   FunctionReference=(MemberName="BpExampleFunc")
+   bIsEditable=True
+   NodeGuid=546E3B764F9A7281859A7492B0DD7672
+   CustomProperties Pin (PinId=648922534AFB5D01DA7FEC8E15B1AD22,PinName="then",Direction="EGPD_Output",PinType.PinCategory="exec",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PinType.bIsUObjectWrapper=False,PinType.bSerializeAsSinglePrecisionFloat=False,LinkedTo=(K2Node_FunctionResult_0 27C68A2940864649FB7DE4B6BD1C990A,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+   CustomProperties Pin (PinId=D0D8187C40E5399FCC05D0BA561A2EA9,PinName="PinIn",Direction="EGPD_Output",PinType.PinCategory="int",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PinType.bIsUObjectWrapper=False,PinType.bSerializeAsSinglePrecisionFloat=False,LinkedTo=(K2Node_PromotableOperator_0 F82103034A69C56CC7ED9EB8015B8D31,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+   CustomProperties UserDefinedPin (PinName="PinIn",PinType=(PinCategory="int"),DesiredPinDirection=EGPD_Output)
+End Object
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionResult Name="K2Node_FunctionResult_0" ExportPath="/Script/BlueprintGraph.K2Node_FunctionResult'/Game/Blueprints/Meta/Controllers/MetaController_ProfileInitializer.MetaController_ProfileInitializer:BpExampleFunc.K2Node_FunctionResult_0'"
+   FunctionReference=(MemberName="BpExampleFunc")
+   bIsEditable=True
+   NodePosX=320
+   NodeGuid=2E07107941EA465F43EAEDB3B52902D9
+   CustomProperties Pin (PinId=27C68A2940864649FB7DE4B6BD1C990A,PinName="execute",PinType.PinCategory="exec",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PinType.bIsUObjectWrapper=False,PinType.bSerializeAsSinglePrecisionFloat=False,LinkedTo=(K2Node_FunctionEntry_0 648922534AFB5D01DA7FEC8E15B1AD22,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+   CustomProperties Pin (PinId=5E4FE3EE4A61B5CD6B9E22B69340709C,PinName="PinOut",PinType.PinCategory="int",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PinType.bIsUObjectWrapper=False,PinType.bSerializeAsSinglePrecisionFloat=False,DefaultValue="0",AutogeneratedDefaultValue="0",LinkedTo=(K2Node_PromotableOperator_0 84BA7F39461ECC56886E86AD8F6960B5,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+   CustomProperties UserDefinedPin (PinName="PinOut",PinType=(PinCategory="int"),DesiredPinDirection=EGPD_Input,PinDefaultValue="0")
+End Object
+
+Begin Object
+
+    Class=/Script/BlueprintGraph.K2Node_PromotableOperator Name="K2Node_PromotableOperator_0" ExportPath="/Script/BlueprintGraph.K2Node_PromotableOperator'/Game/Blueprints/Meta/Controllers/MetaController_ProfileInitializer.MetaController_ProfileInitializer:BpExampleFunc.K2Node_PromotableOperator_0'"
+   bIsPureFunc=True
+   FunctionReference=(MemberParent="/Script/CoreUObject.Class'/Script/Engine.KismetMathLibrary'",MemberName="Add_IntInt")
+   NodePosX=176
+   NodePosY=53
+   NodeGuid=E4D043AA430D8EB0F7166EB6BF5EE091
+   CustomProperties Pin (PinId=F82103034A69C56CC7ED9EB8015B8D31,PinName="A",PinToolTip="A\nInteger",PinType.PinCategory="int",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PinType.bIsUObjectWrapper=False,PinType.bSerializeAsSinglePrecisionFloat=False,LinkedTo=(K2Node_FunctionEntry_0 D0D8187C40E5399FCC05D0BA561A2EA9,),PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+   CustomProperties Pin (PinId=62FB163A4C4078FBEC7D02A88557D266,PinName="B",PinToolTip="B\nInteger",PinType.PinCategory="int",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False,PinType.bIsConst=False,PinType.bIsWeakPointer=False,PinType.bIsUObjectWrapper=False,PinType.bSerializeAsSinglePrecisionFloat=False,DefaultValue="5",PersistentGuid=00000000000000000000000000000000,bHidden=False,bNotConnectable=False,bDefaultValueIsReadOnly=False,bDefaultValueIsIgnored=False,bAdvancedView=False,bOrphanedPin=False,)
+   CustomProperties Pin (PinId=84BA7F39461ECC56886E86AD8F6960B5,PinName="ReturnValue",PinToolTip="Return Value\nInteger\n\nAddition (A + B)"
+   )
+   
+End Object
+
+)BLUEPRINT";
+
+    const std::vector<std::string> Blocks = GetNodeBlocks::Call(BlueprintText);
+
+    ASSERT_EQ(Blocks.size(), 3u);
+
+    // First block checks
+    EXPECT_TRUE(Blocks[0].contains("Begin Object"));
+    EXPECT_TRUE(Blocks[0].contains("End Object"));
+    EXPECT_TRUE(Blocks[0].contains("K2Node_FunctionEntry"));
+    EXPECT_TRUE(Blocks[0].contains("CustomProperties Pin"));
+    EXPECT_TRUE(Blocks[0].contains("NodeGuid="));
+    EXPECT_TRUE(Blocks[0].contains("FunctionReference="));
+
+    // Second block checks
+    EXPECT_TRUE(Blocks[1].contains("Begin Object"));
+    EXPECT_TRUE(Blocks[1].contains("End Object"));
+    EXPECT_TRUE(Blocks[1].contains("K2Node_FunctionResult"));
+    EXPECT_TRUE(Blocks[1].contains("CustomProperties Pin"));
+    EXPECT_TRUE(Blocks[1].contains("NodeGuid="));
+    EXPECT_TRUE(Blocks[1].contains("FunctionReference="));
+}

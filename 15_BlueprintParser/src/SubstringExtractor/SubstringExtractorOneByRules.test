@@ -1,0 +1,644 @@
+
+#include "../SubstringExtractor/SubstringExtractor.h"
+////////
+#include <string>
+#include <optional>
+////////
+#include <gtest/gtest.h>
+////////
+#include "../SubstringExtractor/BaseParseStructures.h"
+
+const auto RunExtractSubstringByRulesTests = [](
+    const std::string_view Text,
+    const FExtractionRules& Rules)
+{
+    const auto [Range, Extracted]
+        = SubstringExtractor::ExtractFirstSubstring(Text, Rules);
+
+    return std::pair<FSubstringRange, std::optional<std::string>>(Range, Extracted);
+};
+
+//------------------------------------------------------------------------------
+// ExtractFirstSubstring, T01_ValidSimpleBlock
+//------------------------------------------------------------------------------
+TEST(ExtractFirstSubstring, T01_ValidSimpleBlock)
+{
+    SCOPED_TRACE("T01: Basic block extraction with default rules, no ignores");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start CONTENT End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 17);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start CONTENT End");
+}
+
+//------------------------------------------------------------------------------
+// ExtractFirstSubstring, T02_BlockMissingStartMarker
+//------------------------------------------------------------------------------
+TEST(ExtractFirstSubstring, T02_BlockMissingStartMarker)
+{
+    SCOPED_TRACE("T02: Block start marker not found");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Begin" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start CONTENT End", Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+//------------------------------------------------------------------------------
+// ExtractFirstSubstring, T03_BlockMissingEndMarker
+//------------------------------------------------------------------------------
+TEST(ExtractFirstSubstring, T03_BlockMissingEndMarker)
+{
+    SCOPED_TRACE("T03: Block end marker not found");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "Finish" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start CONTENT End", Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+//------------------------------------------------------------------------------
+// ExtractFirstSubstring, T04_EssentialMarkerMissing
+//------------------------------------------------------------------------------
+TEST(ExtractFirstSubstring, T04_EssentialMarkerMissing)
+{
+    SCOPED_TRACE("T04: Essential marker not present between start and end");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" },
+            .EssentialMarkers = { "KEY" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    const std::string Text = "Start CONTENT End";
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests(Text, Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(ExtractFirstSubstring, T05_EssentialMarkerPresent)
+{
+    SCOPED_TRACE("T05: Essential marker present and validated");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" },
+            .EssentialMarkers = { "KEY" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start someKEYstuff End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 22);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start someKEYstuff End");
+}
+
+TEST(ExtractFirstSubstring, T05bis_EssentialMarkerPresentInSecondBlock)
+{
+    SCOPED_TRACE("T05bis: Essential marker present in second block");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" },
+            .EssentialMarkers = { "SECOND" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    const std::string Text = "Start FIRST EndxxxStart SECOND End";
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests(Text, Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 18);
+    EXPECT_EQ(Range.End, 34);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start SECOND End");
+}
+
+TEST(ExtractFirstSubstring, T06_WithIgnoredRangesBetween)
+{
+    SCOPED_TRACE("T06: Ignore content inside () ranges during marker search");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start (SKIP) REAL End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 21);
+
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start (SKIP) REAL End");
+}
+
+TEST(ExtractFirstSubstring, T07_MultipleStartMarkers_ChooseFirstValid)
+{
+    SCOPED_TRACE("T07: Multiple StartMarkers — choose first valid");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start", "Open" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Open block Start payload End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 11);
+    EXPECT_EQ(Range.End, 28);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start payload End");
+}
+
+TEST(ExtractFirstSubstring, T08_MultipleEndMarkers_ChooseFirstValid)
+{
+    SCOPED_TRACE("T08: Multiple EndMarkers — choose first valid after start");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "Stop", "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start DATA Stop and then End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 15);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start DATA Stop");
+}
+
+TEST(ExtractFirstSubstring, T09_IgnoredCharDoesNotEliminateEssentials)
+{
+    SCOPED_TRACE("T09: IgnoredChar does not remove essential content");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" },
+            .EssentialMarkers = { "abcde" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char Ch) { return Ch == '_'; },
+            .IgnoredRangesBetween = {},
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start a_b_c_d_e End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 19);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start a_b_c_d_e End");
+}
+
+TEST(ExtractFirstSubstring, T10_NestedIgnoredRangesSkipped)
+{
+    SCOPED_TRACE("T10: Nested ignored ranges skipped during essential scan");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start ((ignore this)) End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 25);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start ((ignore this)) End");
+}
+
+TEST(ExtractFirstSubstring, T11_EndMarkerAtEndOfText)
+{
+    SCOPED_TRACE("T11: EndMarker is the last word in text");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start something to End!", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 22);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start something to End");
+}
+
+TEST(ExtractFirstSubstring, T12_MarkersInsideIgnoredRangeSkipped)
+{
+    SCOPED_TRACE("T12: Start marker inside ignored range should not be used");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("(Start) Start visible End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 8);
+    EXPECT_EQ(Range.End, 25);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "Start visible End");
+}
+
+TEST(ExtractFirstSubstring, T13_EssentialMarkerMustBeOutsideIgnoredRange)
+{
+    SCOPED_TRACE("T13: Essential marker inside ignored range should be skipped");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" },
+            .EssentialMarkers = { "KEY" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start (KEY) visible End", Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+TEST(ExtractFirstSubstring, T14_CaseInsensitiveMatching)
+{
+    SCOPED_TRACE("T14: Case-insensitive matching across all markers");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "START" },
+            .EndMarkers = { "END" },
+            .EssentialMarkers = { "key" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = {},
+            .bCaseInsensitive = true
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("sTarT content Key EnD", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 21);
+    EXPECT_TRUE(Extracted.has_value());
+    EXPECT_EQ(Extracted.value(), "sTarT content Key EnD");
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T15_PartialStartMarker_NoMatch
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T15_PartialStartMarker_NoMatch)
+{
+    SCOPED_TRACE("T15: Partial start marker does not match");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Sta content End", Rules);
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T16_MultipleBlocks_OnlyFirstExtracted
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T16_MultipleBlocks_OnlyFirstExtracted)
+{
+    SCOPED_TRACE("T16: Only the first valid block should be extracted");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start A End junk Start B End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Extracted.value(), "Start A End");
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T17_OverlappingMarkers_FirstEndWins
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T17_OverlappingMarkers_FirstEndWins)
+{
+    SCOPED_TRACE("T17: Overlapping start markers — first End after first Start wins");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start X Start Y End End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Extracted.value(), "Start X Start Y End");
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T18_StartAfterEnd_Invalid
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T18_StartAfterEnd_Invalid)
+{
+    SCOPED_TRACE("T18: Start marker occurs after end marker — invalid");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("End Start payload", Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T19_IgnoredNestedRanges
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T19_IgnoredNestedRanges)
+{
+    SCOPED_TRACE("T19: Nested ignored ranges are skipped properly");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'(', ')'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start (ignore (this)) End", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Extracted.value(), "Start (ignore (this)) End");
+}
+
+TEST(ExtractSubstringByRules_Extended, T20_AllEssentialsMustExist)
+{
+    SCOPED_TRACE("T20: All essential markers must be found");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" },
+            .EssentialMarkers = { "A", "B", "C" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start A and C only End", Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T21_MarkersAtTextBounds
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T21_MarkersAtTextBounds)
+{
+    SCOPED_TRACE("T21: Start at 0, End at text.size()");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End!" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("Start full range End!", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Range.Start, 0);
+    EXPECT_EQ(Range.End, 21);
+    EXPECT_EQ(Extracted.value(), "Start full range End!");
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T22_EmptyBlockContent
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T22_EmptyBlockContent)
+{
+    SCOPED_TRACE("T22: Block with empty content is invalid");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("StartEnd", Rules);
+
+    EXPECT_TRUE(Range.IsValid() == false);
+    EXPECT_EQ(Range.Start, std::string::npos);
+    EXPECT_EQ(Range.End, std::string::npos);
+    EXPECT_TRUE(!Extracted);
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T23_BlockInsideIgnoredRange
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T23_BlockInsideIgnoredRange)
+{
+    SCOPED_TRACE("T23: Entire block inside ignored range should be skipped");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Start" },
+            .EndMarkers = { "End" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .IgnoredRangesBetween = { {'<', '>'} },
+            .bCaseInsensitive = false
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("<Start skip End>", Rules);
+
+    EXPECT_FALSE(Range.IsValid());
+    EXPECT_FALSE(Extracted.has_value());
+}
+
+//------------------------------------------------------------------------------
+// ExtractSubstringByRules_Extended, T24_EmptyTextOrInvalidRules
+//------------------------------------------------------------------------------
+TEST(ExtractSubstringByRules_Extended, T24_EmptyTextOrInvalidRules)
+{
+    SCOPED_TRACE("T24: Empty text or missing markers");
+
+    FExtractionRules InvalidRules {
+        .BlockMarkers = {
+            .StartMarkers = {},
+            .EndMarkers = {}
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    auto [RangeA, ExtractedA] = RunExtractSubstringByRulesTests("", InvalidRules);
+    EXPECT_FALSE(RangeA.IsValid());
+    EXPECT_FALSE(ExtractedA.has_value());
+
+    auto [RangeB, ExtractedB] = RunExtractSubstringByRulesTests("Start X End", InvalidRules);
+    EXPECT_FALSE(RangeB.IsValid());
+    EXPECT_FALSE(ExtractedB.has_value());
+}
+
+TEST(ExtractSubstringByRules_Extended, T25_CharIgnorePlusCaseInsensitive)
+{
+    SCOPED_TRACE("T25: Char ignoring and case-insensitivity together");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "START" },
+            .EndMarkers = { "END" },
+            .EssentialMarkers = { "key" }
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char C) { return C == '_'; },
+            .IgnoredRangesBetween = {},
+            .bCaseInsensitive = true
+        }
+    };
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests("s_T_A_R_T _key_ e_N_D", Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Extracted.value(), "s_T_A_R_T _key_ e_N_D");
+}
+
+TEST(ExtractSubstringByRules, T26_OverlappinIgnoreBlocks)
+{
+    SCOPED_TRACE("T26: Two overlapping ignored blocks, must parse");
+
+    FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Begin Object" },
+            .EndMarkers = { "End Object" },
+            .EssentialMarkers = {"CustomProperties Pin", "NodeGuid=", "FunctionReference="}
+        },
+        .IgnoredRangesRules = {
+            .IgnoredRangesBetween = { {'(', ')'}, {'"', '"'} },
+        }
+    };
+
+    const std::string_view BlueprintText
+        = R"TESTZ(Begin Object:
+            (")" <-- issue is here!!!
+            CustomProperties Pin1, NodeGuid=1,
+            FunctionReference=1 
+        :End Object)TESTZ";
+
+    auto [Range, Extracted] = RunExtractSubstringByRulesTests(BlueprintText, Rules);
+
+    EXPECT_TRUE(Range.IsValid());
+    EXPECT_EQ(Extracted.value(), BlueprintText);
+}

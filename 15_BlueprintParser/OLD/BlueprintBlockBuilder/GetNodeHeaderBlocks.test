@@ -1,0 +1,117 @@
+#pragma once
+
+#include "../BlueprintBlockBuilder/BlueprintBlockBuilder.h"
+////////
+#include <string>
+#include <vector>
+////////
+#include <gtest/gtest.h>
+////////
+
+
+struct GetNodeHeaderBlocks : public BlueprintBlockBuilder
+{
+    static auto Call(const std::string_view FullBlueprintText)
+    {
+        return BlueprintBlockBuilder::GetNodeHeaderBlocks(FullBlueprintText);
+    }
+};
+
+
+TEST(GetNodeHeaderBlocks, T01_SuperSimpleNodeHeader)
+{
+    SCOPED_TRACE("T01: "
+        "IF: Basic NodeHeader with 3 valid blocks, "
+        "THEN: All 3 are extracted");
+
+    const std::string_view BlueprintText = R"TESTZ(
+        Begin Object: Class=0", "ExportPath=0", "FunctionReference=0", "NodeGuid=0 CustomProperties trash
+        Begin Object: Class=1", "ExportPath=1", "FunctionReference=1", "NodeGuid=1 CustomProperties trash
+        Begin Object: Class=2", "ExportPath=2", "FunctionReference=2", "NodeGuid=2 CustomProperties trash
+    )TESTZ";
+
+    const auto Result = GetNodeHeaderBlocks::Call(BlueprintText);
+
+    EXPECT_TRUE(Result.contains("Begin Object: Class=0"));
+    EXPECT_TRUE(Result.contains("ExportPath=0"));
+    EXPECT_TRUE(Result.contains("FunctionReference=0"));
+    EXPECT_TRUE(Result.contains("NodeGuid=0"));
+    EXPECT_TRUE(Result.contains("CustomProperties"));
+
+    // EXPECT_TRUE(Result[1].contains("Begin Object: Class=1"));
+    // EXPECT_TRUE(Result[1].contains("ExportPath=1"));
+    // EXPECT_TRUE(Result[1].contains("FunctionReference=1"));
+    // EXPECT_TRUE(Result[1].contains("NodeGuid=1"));
+    // EXPECT_TRUE(Result[1].contains("CustomProperties"));
+
+    // EXPECT_TRUE(Result[2].contains("Begin Object: Class=2"));
+    // EXPECT_TRUE(Result[2].contains("ExportPath=2"));
+    // EXPECT_TRUE(Result[2].contains("FunctionReference=2"));
+    // EXPECT_TRUE(Result[2].contains("NodeGuid=2"));
+    // EXPECT_TRUE(Result[2].contains("CustomProperties"));
+}
+
+TEST(GetNodeHeaderBlocks, T02_NodeHeaderWithMarkers)
+{
+    SCOPED_TRACE("T02: "
+        "IF: Basic NodeHeader with node markers in ingnored blocks in 3 valid blocks, "
+        "THEN: All 3 are extracted");
+
+    const std::string_view BlueprintText = R"TESTZ(
+        Begin Object=0Class="CustomProperties"0ExportPath=0FunctionReference=0NodeGuid=0CustomProperties trash
+        Begin Object=1Class='CustomProperties'ExportPath=1FunctionReference=1NodeGuid=1CustomProperties trash
+        Begin Object=2Class=(CustomProperties)ExportPath=2FunctionReference=2NodeGuid=2CustomProperties trash
+    )TESTZ";
+
+    const auto Result = GetNodeHeaderBlocks::Call(BlueprintText);
+
+    EXPECT_TRUE(Result.contains("Begin Object=0"));
+    EXPECT_TRUE(Result.contains("ExportPath=0"));
+    EXPECT_TRUE(Result.contains("FunctionReference=0"));
+    EXPECT_TRUE(Result.contains("NodeGuid=0"));
+    EXPECT_TRUE(Result.contains("CustomProperties"));
+
+    // EXPECT_TRUE(Result[1].contains("Begin Object=1"));
+    // EXPECT_TRUE(Result[1].contains("ExportPath=1"));
+    // EXPECT_TRUE(Result[1].contains("FunctionReference=1"));
+    // EXPECT_TRUE(Result[1].contains("NodeGuid=1"));
+    // EXPECT_TRUE(Result[1].contains("CustomProperties"));
+
+    // EXPECT_TRUE(Result[2].contains("Begin Object=2"));
+    // EXPECT_TRUE(Result[2].contains("ExportPath=2"));
+    // EXPECT_TRUE(Result[2].contains("FunctionReference=2"));
+    // EXPECT_TRUE(Result[2].contains("NodeGuid=2"));
+    // EXPECT_TRUE(Result[2].contains("CustomProperties"));
+}
+
+TEST(GetNodeHeaderBlocks, T03_RealNodeHeaders)
+{
+    SCOPED_TRACE("T03: "
+        "IF: Real NodeHeader in 2 valid blocks, "
+        "THEN: All 2 are extracted");
+
+    const std::string_view BlueprintText = R"TESTZ(
+        Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name="K2Node_FunctionEntry_0" ExportPath="/Script/BlueprintGraph.K2Node_FunctionEntry'/Game/Blueprints/Meta/Controllers/MetaController_ProfileInitializer.MetaController_ProfileInitializer:BpExampleFunc.K2Node_FunctionEntry_0'"
+   ExtraFlags=1543634944
+   FunctionReference=(MemberName="BpExampleFunc")
+   bIsEditable=True
+   NodeGuid=546E3B764F9A7281859A7492B0DD7672
+   CustomProperties Pin (PinId=648922534AFB5D01DA7FEC8E15B1AD22,PinName="then",Direction="EGPD_Output",PinType.PinCategory="exec",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=(),PinType.PinValueType=(),PinType.ContainerType=None,PinType.bIsReference=False=False,bOrphanedPin=False,)
+   CustomProperties UserDefinedPin (PinName="PinIn",PinType=(PinCategory="int"),DesiredPinDirection=EGPD_Output)
+End Object
+Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionResult Name="K2Node_FunctionResult_0" ExportPath="/Script/BlueprintGraph.K2Node_FunctionResult'/Game/Blueprints/Meta/Controllers/MetaController_ProfileInitializer.MetaController_ProfileInitializer:BpExampleFunc.K2Node_FunctionResult_0'"
+   FunctionReference=(MemberName="BpExampleFunc")
+   bIsEditable=True
+   NodePosX=320
+   NodeGuid=2E07107941EA465F43EAEDB3B52902D9
+   CustomProperties Pin (PinId=27C68A2940864649FB7DE4B6BD1C990A,PinName="execute",PinType.PinCategory="exec",PinType.PinSubCategory="",PinType.PinSubCategoryObject=None,PinType.PinSubCategoryMemberReference=()
+    )TESTZ";
+
+    const auto Result = GetNodeHeaderBlocks::Call(BlueprintText);
+
+    EXPECT_TRUE(Result.contains("Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionEntry Name"));
+    EXPECT_TRUE(Result.contains("NodeGuid=546E3B764F9A7281859A7492B0DD7672"));
+
+    // EXPECT_TRUE(Result[1].contains("Begin Object Class=/Script/BlueprintGraph.K2Node_FunctionResult Name"));
+    // EXPECT_TRUE(Result[1].contains("NodeGuid=2E07107941EA465F43EAEDB3B52902D9"));
+}

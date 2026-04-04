@@ -1,0 +1,231 @@
+
+#include "StringNormalizer.h"
+////////
+#include <string>
+#include <optional>
+////////
+#include <gtest/gtest.h>
+
+const auto ToLowerCaseIfNeededLambda = [](const std::string_view Text)
+{
+    return StringNormalizer::ToLowerCase(Text);
+};
+
+const auto RemoveIgnoredCharsLambda = [](const std::string_view Text, const std::function<bool(char)>& Predicate)
+{
+    return StringNormalizer::RemoveIgnoredChars(Text, Predicate);
+};
+
+const auto RemoveIgnoredRangeLambda = [](const std::string_view Text, const std::pair<char, char>& Range)
+{
+    return StringNormalizer::RemoveAllIgnoredRanges(Text, {Range});
+};
+
+const auto RemoveAllIgnoredRangesLambda = [](const std::string_view Text, const std::vector<std::pair<char, char>>& Ranges)
+{
+    return StringNormalizer::RemoveAllIgnoredRanges(Text, Ranges);
+};
+
+const auto NormalizeStringByRulesLambda = [](const std::string_view Text, const FIgnoredRangesRules& Rules)
+{
+    return StringNormalizer::NormalizeStringByRules(Text, Rules);
+};
+
+
+TEST(StringNormalizer_ToLowerCase, T01_ToLowerCaseEnabled)
+{
+    SCOPED_TRACE("T01: Convert to lowercase when case-insensitive is true");
+    std::string Result = ToLowerCaseIfNeededLambda("HeLLo WoRLd");
+    EXPECT_EQ(Result, "hello world");
+}
+
+TEST(StringNormalizer_ToLowerCase, T02_EmptyInputToLowerCase)
+{
+    SCOPED_TRACE("T02: Handle empty input gracefully");
+    std::string Result = ToLowerCaseIfNeededLambda("");
+    EXPECT_EQ(Result, "");
+}
+
+
+
+
+
+
+
+
+
+
+
+TEST(StringNormalizer_RemoveIgnoredChars, T04_RemoveWhitespaceCharacters)
+{
+    SCOPED_TRACE("T04: Remove all space and tab characters");
+    auto Predicate = [](char Ch) { return Ch == ' ' || Ch == '\t'; };
+    std::string Result = RemoveIgnoredCharsLambda("a b\tc d\te", Predicate);
+    EXPECT_EQ(Result, "abcde");
+}
+
+TEST(StringNormalizer_RemoveIgnoredChars, T05_RemoveNothing)
+{
+    SCOPED_TRACE("T05: No characters removed if predicate always false");
+    auto Predicate = [](char) { return false; };
+    std::string Result = RemoveIgnoredCharsLambda("abc123", Predicate);
+    EXPECT_EQ(Result, "abc123");
+}
+
+TEST(StringNormalizer_RemoveIgnoredChars, T06_RemoveAll)
+{
+    SCOPED_TRACE("T06: Remove all characters if predicate always true");
+    auto Predicate = [](char) { return true; };
+    std::string Result = RemoveIgnoredCharsLambda("abc123", Predicate);
+    EXPECT_EQ(Result, "");
+}
+
+
+
+
+
+
+
+TEST(StringNormalizer_RemoveIgnoredRange, T01_MultipleIgnoredRanges)
+{
+    SCOPED_TRACE("T01: Remove multiple ranges");
+    std::string Result = RemoveIgnoredRangeLambda("a(x)b(y)c", {'(', ')'});
+    EXPECT_EQ(Result, "abc");
+}
+
+TEST(StringNormalizer_RemoveIgnoredRange, T02_EmptyInputRangeRemoval)
+{
+    SCOPED_TRACE("T02: Handle empty input string");
+    std::string Result = RemoveIgnoredRangeLambda("", {'(', ')'});
+    EXPECT_EQ(Result, "");
+}
+
+TEST(StringNormalizer_RemoveIgnoredRange, T03_RemoveParenthesesContent)
+{
+    SCOPED_TRACE("T03: Remove content within parentheses");
+    std::string Result = RemoveIgnoredRangeLambda("abc(def)ghi", {'(', ')'});
+    EXPECT_EQ(Result, "abcghi");
+}
+
+TEST(StringNormalizer_RemoveIgnoredRange, T04_RemoveQuotesContent)
+{
+    SCOPED_TRACE("T04: Remove content within quotes");
+    std::string Result = RemoveIgnoredRangeLambda(R"(abc"xyz"def)", {'"', '"'});
+    std::string Expected = "abcdef";
+    EXPECT_EQ(Result, Expected);
+}
+
+TEST(StringNormalizer_RemoveIgnoredRange, T05_UnclosedRange)
+{
+    SCOPED_TRACE("T05: Opening without closing should skip until end");
+    std::string Result = RemoveIgnoredRangeLambda("abc(def", {'(', ')'});
+    EXPECT_EQ(Result, "abc");
+}
+
+TEST(StringNormalizer_RemoveIgnoredRange, T06_OverlappingRanges)
+{
+    SCOPED_TRACE("T06: Respects ranges overlap");
+    std::string Result = RemoveIgnoredRangeLambda("a(zy(x))bc", {'(', ')'});
+    EXPECT_EQ(Result, "abc");
+}
+
+
+
+
+
+
+
+TEST(StringNormalizer_RemoveAllIgnoredRanges, T01_RemoveAllRanges_OverlappingPairs)
+{
+    SCOPED_TRACE("T01: Overlapping range types handled sequentially");
+    std::string Result = RemoveAllIgnoredRangesLambda("a(b\"c)\"d", { {'(', ')'}, {'"', '"'} });
+    std::string Expected = "ad";
+    EXPECT_EQ(Result, Expected);
+}
+
+TEST(StringNormalizer_RemoveAllIgnoredRanges, T02_RemoveAllRanges_MultipleTypes)
+{
+    SCOPED_TRACE("T02: Remove both quoted and parenthesized ranges");
+    std::string Result = RemoveAllIgnoredRangesLambda(R"(a("x")b(c)d)", { {'(', ')'}, {'"', '"'} });
+    EXPECT_EQ(Result, "abd");
+}
+
+TEST(StringNormalizer_RemoveAllIgnoredRanges, T03_RemoveAllRanges_NoRangesPresent)
+{
+    SCOPED_TRACE("T03: No ranges found — input remains unchanged");
+    std::string Result = RemoveAllIgnoredRangesLambda("abcdef", { {'(', ')'}, {'"', '"'} });
+    EXPECT_EQ(Result, "abcdef");
+}
+
+TEST(StringNormalizer_RemoveAllIgnoredRanges, T04_RemoveAllRanges_EmptyInput)
+{
+    SCOPED_TRACE("T04: Handle empty string input");
+    std::string Result = RemoveAllIgnoredRangesLambda("", { {'(', ')'}, {'"', '"'} });
+    EXPECT_EQ(Result, "");
+}
+
+
+
+
+
+
+
+
+//------------------------------------------------------------------------------
+// StringUtilities, T16_Normalize_FullPipeline
+//------------------------------------------------------------------------------
+TEST(StringUtilities, T16_Normalize_FullPipeline)
+{
+    SCOPED_TRACE("T16: Normalize with lowercase, ignored ranges, and ignored chars");
+    FIgnoredRangesRules Rules {
+        .IgnoredChar = [](char Ch) { return Ch == '_'; },
+        .IgnoredRangesBetween = { {'(', ')'}, {'"', '"'} },
+        .bCaseInsensitive = true
+    };
+
+    std::string Result = NormalizeStringByRulesLambda(R"(Ab_c("D")eF)", Rules);
+    EXPECT_EQ(Result, "abcef");
+}
+
+//------------------------------------------------------------------------------
+// StringUtilities, T17_Normalize_NoCaseChange
+//------------------------------------------------------------------------------
+TEST(StringUtilities, T17_Normalize_NoCaseChange)
+{
+    SCOPED_TRACE("T17: Normalize with case-sensitive mode");
+    FIgnoredRangesRules Rules {
+        .IgnoredChar = [](char) { return false; },
+        .IgnoredRangesBetween = { {'(', ')'} },
+        .bCaseInsensitive = false
+    };
+
+    std::string Result = NormalizeStringByRulesLambda("ABC(def)G_H", Rules);
+    EXPECT_EQ(Result, "ABCG_H");
+}
+
+//------------------------------------------------------------------------------
+// StringUtilities, T18_Normalize_OnlyIgnoredChars
+//------------------------------------------------------------------------------
+TEST(StringUtilities, T18_Normalize_OnlyIgnoredChars)
+{
+    SCOPED_TRACE("T18: Normalize string by removing ignored characters only");
+    FIgnoredRangesRules Rules {
+        .IgnoredChar = [](char Ch) { return Ch == 'x' || Ch == 'y'; },
+        .IgnoredRangesBetween = {},
+        .bCaseInsensitive = false
+    };
+
+    std::string Result = NormalizeStringByRulesLambda("AxByCz", Rules);
+    EXPECT_EQ(Result, "ABCz");
+}
+
+//------------------------------------------------------------------------------
+// StringUtilities, T19_Normalize_EmptyInput
+//------------------------------------------------------------------------------
+TEST(StringUtilities, T19_Normalize_EmptyInput)
+{
+    SCOPED_TRACE("T19: Normalize empty input should yield empty output");
+    FIgnoredRangesRules Rules {};
+    std::string Result = NormalizeStringByRulesLambda("", Rules);
+    EXPECT_EQ(Result, "");
+}

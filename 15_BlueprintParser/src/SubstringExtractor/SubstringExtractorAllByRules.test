@@ -1,0 +1,526 @@
+
+#include "../SubstringExtractor/SubstringExtractor.h"
+////////
+#include <string>
+#include <vector>
+#include <optional>
+////////
+#include <gtest/gtest.h>
+////////
+
+const auto ExtractAllByRules = [](
+    const std::string_view Source,
+    const FExtractionRules& Rules)
+{
+    return SubstringExtractor::ExtractAllSubstrings(Source, Rules);
+};
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T01_MultipleBlocksPresent)
+{
+    SCOPED_TRACE("T01: "
+        "IF: Two valid blocks enclosed by start/end markers, "
+        "THEN: Both are extracted");
+
+    const std::string Source = "Item=(Value=1) Extra Item=(Value=2)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {
+            .IgnoredChar = [](char) { return false; },
+            .bCaseInsensitive = false
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], "Item=(Value=1)");
+    EXPECT_EQ(Result[1], "Item=(Value=2)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T02_SingleBlockPresent)
+{
+    SCOPED_TRACE("T02: "
+        "IF: One valid block, "
+        "THEN: One result returned");
+
+    const std::string_view Source = "Item=(Data=42)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "Item=(Data=42)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T03_NoStartMarker)
+{
+    SCOPED_TRACE("T03: "
+        "IF: No start marker exists in the text, "
+        "THEN: No substring extracted");
+
+    const std::string_view Source = "NoMatch=(X=Y)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "MissingStart=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    EXPECT_TRUE(Result.empty());
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T04_OverlappingMarkersHandledSafely)
+{
+    SCOPED_TRACE("T04: "
+        "IF: Nested blocks, "
+        "THEN: Only top-level non-overlapping blocks are extracted");
+
+    const std::string_view Source = "Block=[Inner=(X=Y)] Block=[Inner=(A=B)].";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Block=" },
+            .EndMarkers = { "." },
+        },
+        .IgnoredRangesRules = {
+            .IgnoredRangesBetween = { {'(', ')'} },
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    const size_t ExpectedResultSize = 1u;
+    ASSERT_EQ(Result.size(), ExpectedResultSize);
+
+    const std::string_view ExpectedResult0 = Source;
+    EXPECT_EQ(Result[0], ExpectedResult0);
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T05_RequiresEssentialMarkerInside)
+{
+    SCOPED_TRACE("T05: "
+        "IF: Block exists but lacks essential marker inside, "
+        "THEN: Block is skipped");
+
+    const std::string_view Source = "Item=(ID=5) Item=(Name=Foo)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+            .EssentialMarkers = { "Name=" }
+        },
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "Item=(Name=Foo)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T06_EmptyInputReturnsEmpty)
+{
+    SCOPED_TRACE("T06: "
+        "IF: Empty source, "
+        "THEN: Result is empty");
+
+    const std::string_view Source = "";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "X=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    EXPECT_TRUE(Result.empty());
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T07_StartIsNpos_EssentialMarkerMissing)
+{
+    SCOPED_TRACE("T07: Start is npos, block skipped, next one processed");
+
+    const std::string_view Source = "Item=(ID=1) Item=(Name=Valid)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+            .EssentialMarkers = { "Name=" }
+        },
+        .IgnoredRangesRules = {}
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "Item=(Name=Valid)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T08_EndMarkerMissing)
+{
+    SCOPED_TRACE("T08: No End marker, block consumes all till theend marker");
+
+    const std::string_view Source = "Item=(A=1 Item=(B=2)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "Item=(A=1 Item=(B=2)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T09_ZeroLengthRange)
+{
+    SCOPED_TRACE("T09: Range with zero length is ignored");
+
+    const std::string_view Source = "Item=";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    EXPECT_TRUE(Result.empty());
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T10_EndBeforeStart)
+{
+    SCOPED_TRACE("T10: End marker before start marker, invalid");
+
+    const std::string_view Source = "End Item=(A=1)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { "End" },
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    EXPECT_TRUE(Result.empty());
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T11_ConsecutiveValidBlocks)
+{
+    SCOPED_TRACE("T11: Consecutive blocks without whitespace are extracted");
+
+    const std::string_view Source = "Item=(A=1)Item=(B=2)Item=(C=3)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 3u);
+    EXPECT_EQ(Result[0], "Item=(A=1)");
+    EXPECT_EQ(Result[1], "Item=(B=2)");
+    EXPECT_EQ(Result[2], "Item=(C=3)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T12_NestedIgnoredRangesInsideBlock)
+{
+    SCOPED_TRACE("T12: Ignored nested range inside block does not break extraction");
+
+    const std::string_view Source = "Item=(A=\"B,C\") Item=(D=E)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {
+            .IgnoredRangesBetween = { {'"', '"'} }
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], "Item=(A=\"B,C\")");
+    EXPECT_EQ(Result[1], "Item=(D=E)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T13_CaseInsensitiveMarkers)
+{
+    SCOPED_TRACE("T13: Case-insensitive Start marker");
+
+    const std::string_view Source = "ITEM=(X=1)item=(Y=2)Item=(Z=3)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {
+            .bCaseInsensitive = true
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 3u);
+    EXPECT_EQ(Result[0], "ITEM=(X=1)");
+    EXPECT_EQ(Result[1], "item=(Y=2)");
+    EXPECT_EQ(Result[2], "Item=(Z=3)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T14_InvalidBlocksSkipped_ValidOnesPreserved)
+{
+    SCOPED_TRACE("T14: Invalid block without EssentialMarkers skipped, valid block extracted");
+
+    const std::string_view Source = "Item=(A=1)zzzItem=(B=2)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+            .EssentialMarkers = { "B=" }
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "Item=(B=2)");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T15_OnlyEndMarkersPresent)
+{
+    SCOPED_TRACE("T15: Only End markers exist, nothing extracted");
+
+    const std::string_view Source = "End End End";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { "End" },
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    EXPECT_TRUE(Result.empty());
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T16_RealBlueprintExample)
+{
+    SCOPED_TRACE("T16: "
+        "IF: Basic blueprint with 2 valid blocks, "
+        "THEN: Both are extracted");
+
+    const std::string_view Source = R"TESTZ(
+        Begin Object: CustomProperties Pin1, NodeGuid=1, MemberName=1 :End Object
+        Begin Object: CustomProperties Pin2, NodeGuid=2, MemberName=2 :End Object
+    )TESTZ";
+
+    const FExtractionRules Rules {
+        .BlockMarkers{
+            .StartMarkers = { "Begin Object", "Class=", "ExportPath=", "FunctionReference=" },
+            .EndMarkers = { "End Object" },
+            .EssentialMarkers = {"CustomProperties Pin", "NodeGuid=", "MemberName="}
+        },
+        .IgnoredRangesRules
+        {
+            .IgnoredChar = [](char c) { return !isgraph(static_cast<unsigned char>(c)); },
+            .IgnoredRangesBetween = { {'(', ')'}, {'"', '"'}, {'\'', '\''} },
+            .bCaseInsensitive = true
+
+        }
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], "Begin Object: CustomProperties Pin1, NodeGuid=1, MemberName=1 :End Object");
+    EXPECT_EQ(Result[1], "Begin Object: CustomProperties Pin2, NodeGuid=2, MemberName=2 :End Object");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T17_ExcludeMarkers_SingleBlock)
+{
+    SCOPED_TRACE("T17: "
+        "IF: Single block with bExcludeMarkers=true, "
+        "THEN: Only content between markers is extracted");
+
+    const std::string_view Source = "Item=(Data=42)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {},
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "(Data=42");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T18_ExcludeMarkers_MultipleBlocks)
+{
+    SCOPED_TRACE("T18: "
+        "IF: Multiple blocks with bExcludeMarkers=true, "
+        "THEN: Only content between markers is extracted for each");
+
+    const std::string_view Source = "Item=(Value=1) Item=(Value=2)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {},
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], "(Value=1");
+    EXPECT_EQ(Result[1], "(Value=2");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T19_ExcludeMarkers_WithEssentialMarkers)
+{
+    SCOPED_TRACE("T19: "
+        "IF: Block with essential markers and bExcludeMarkers=true, "
+        "THEN: Only valid content between markers is extracted");
+
+    const std::string_view Source = "Item=(ID=5) Item=(Name=Foo)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+            .EssentialMarkers = { "Name=" }
+        },
+        .IgnoredRangesRules = {},
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 1u);
+    EXPECT_EQ(Result[0], "(Name=Foo");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T20_ExcludeMarkers_ConsecutiveBlocks)
+{
+    SCOPED_TRACE("T20: "
+        "IF: Consecutive blocks with bExcludeMarkers=true, "
+        "THEN: Only content between markers is extracted for each");
+
+    const std::string_view Source = "Item=(A=1)Item=(B=2)Item=(C=3)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {},
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 3u);
+    EXPECT_EQ(Result[0], "(A=1");
+    EXPECT_EQ(Result[1], "(B=2");
+    EXPECT_EQ(Result[2], "(C=3");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T21_ExcludeMarkers_WithIgnoredRanges)
+{
+    SCOPED_TRACE("T21: "
+        "IF: Block with ignored ranges and bExcludeMarkers=true, "
+        "THEN: Only content between markers is extracted, ignoring specified ranges");
+
+    const std::string_view Source = "Item=(A=\"B,C\") Item=(D=E)";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {
+            .IgnoredRangesBetween = { {'"', '"'} }
+        },
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], "(A=\"B,C\"");
+    EXPECT_EQ(Result[1], "(D=E");
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T22_ExcludeMarkers_NoValidContent)
+{
+    SCOPED_TRACE("T22: "
+        "IF: Block with no content between markers and bExcludeMarkers=true, "
+        "THEN: Empty result is returned");
+
+    const std::string_view Source = "Item=()";
+    const FExtractionRules Rules {
+        .BlockMarkers = {
+            .StartMarkers = { "Item=" },
+            .EndMarkers = { ")" },
+        },
+        .IgnoredRangesRules = {},
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    EXPECT_TRUE(Result.empty());
+}
+
+TEST(SubstringExtractor_ExtractAllSubstrings, T23_ExcludeMarkers_RealBlueprintExample)
+{
+    SCOPED_TRACE("T23: "
+        "IF: Blueprint example with bExcludeMarkers=true, "
+        "THEN: Only content between Begin/End markers is extracted");
+
+    const std::string_view Source = R"TESTZ(
+        Begin Object: CustomProperties Pin1, NodeGuid=1, MemberName=1 :End Object
+        Begin Object: CustomProperties Pin2, NodeGuid=2, MemberName=2 :End Object
+    )TESTZ";
+
+    const FExtractionRules Rules {
+        .BlockMarkers{
+            .StartMarkers = { "Begin Object", "Class=", "ExportPath=", "FunctionReference=" },
+            .EndMarkers = { "End Object" },
+            .EssentialMarkers = {"CustomProperties Pin", "NodeGuid=", "MemberName="}
+        },
+        .IgnoredRangesRules
+        {
+            .IgnoredChar = [](char c) { return !isgraph(static_cast<unsigned char>(c)); },
+            .IgnoredRangesBetween = { {'(', ')'}, {'"', '"'}, {'\'', '\''} },
+            .bCaseInsensitive = true
+        },
+        .bExcludeMarkers = true
+    };
+
+    const auto Result = ExtractAllByRules(Source, Rules);
+
+    ASSERT_EQ(Result.size(), 2u);
+    EXPECT_EQ(Result[0], ": CustomProperties Pin1, NodeGuid=1, MemberName=1 :");
+    EXPECT_EQ(Result[1], ": CustomProperties Pin2, NodeGuid=2, MemberName=2 :");
+}
