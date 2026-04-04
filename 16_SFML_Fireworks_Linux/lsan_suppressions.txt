@@ -1,0 +1,7 @@
+# Suppress SFML leaks
+leak:sf::RenderWindow
+leak:sf::Window
+leak:sf::GlResource
+leak:libGLX_mesa
+leak:libsfml
+leak:GLX
