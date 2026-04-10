@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="screen_background">#121212</color>
+    <color name="card_background">#1E1E1E</color>
+    <color name="card_stroke">#4FC3F7</color>
+    <color name="roll_button_background">#2C6E83</color>
+    <color name="roll_button_text">#FFFFFFFF</color>
+</resources>

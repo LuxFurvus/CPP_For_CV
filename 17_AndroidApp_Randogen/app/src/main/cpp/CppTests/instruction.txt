@@ -1,0 +1,6 @@
+
+Full Rebuild:
+clear; rm -rf build; cmake -S . -B build; cmake --build build -j; ./build/RandoGenTests
+
+Simple Rerun:
+clear; cmake --build build -j; ./build/RandoGenTests

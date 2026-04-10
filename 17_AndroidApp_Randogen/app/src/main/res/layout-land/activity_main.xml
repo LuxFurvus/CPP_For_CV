@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/screen_background">
+
+    <!-- Vertical split (left / right) -->
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/mainSplitGuide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5" />
+
+    <!-- LEFT: Result panel -->
+    <include
+        android:id="@+id/resultPanel"
+        layout="@layout/result_panel"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="@dimen/screen_spacing"
+        android:layout_marginTop="@dimen/screen_spacing"
+        android:layout_marginEnd="@dimen/section_spacing"
+        android:layout_marginBottom="@dimen/screen_spacing"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/mainSplitGuide" />
+
+    <!-- RIGHT: Container -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/bottomContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="@dimen/section_spacing"
+        android:layout_marginTop="@dimen/screen_spacing"
+        android:layout_marginEnd="@dimen/screen_spacing"
+        android:layout_marginBottom="@dimen/screen_spacing"
+        android:background="@color/screen_background"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@id/mainSplitGuide"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0">
+
+        <!-- Horizontal split (top / bottom) -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/horizontalSplitGuide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <!-- TOP HALF -->
+        <include
+            android:id="@+id/inputPanel"
+            layout="@layout/input_panel"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toTopOf="@id/horizontalSplitGuide"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- Vertical split inside bottom half -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/bottomSplitGuide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <!-- BOTTOM LEFT -->
+        <include
+            android:id="@+id/successChancePanel"
+            layout="@layout/success_chance_panel"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginEnd="@dimen/section_spacing"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/bottomSplitGuide"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/horizontalSplitGuide" />
+
+        <!-- BOTTOM RIGHT -->
+        <include
+            android:id="@+id/rollButtonView"
+            layout="@layout/view_roll_button"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="@dimen/section_spacing"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintDimensionRatio="1:1"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/bottomSplitGuide"
+            app:layout_constraintTop_toTopOf="@id/horizontalSplitGuide" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

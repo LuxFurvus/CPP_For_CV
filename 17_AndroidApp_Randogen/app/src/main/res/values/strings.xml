@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">RandoGen</string>
+
+    <string name="label_rolls">Roll(s):</string>
+    <string name="label_dc">DC:</string>
+    <string name="label_successes">Successes:</string>
+    <string name="label_sum">Sum:</string>
+    <string name="label_results">Results:</string>
+    <string name="label_plus">+</string>
+    <string name="label_minus">-</string>
+
+    <string name="label_roll_number">Dice Number:</string>
+    <string name="label_side_number">Side number:</string>
+    <string name="label_difficulty_check">Difficulty:</string>
+
+    <string name="label_roll">ROLL</string>
+    <string name="label_success_chance">Success Chances:</string>
+    <string name="label_one_cancels_success">1 cancels success:</string>
+
+    <string name="data_empty">---</string>
+
+</resources>

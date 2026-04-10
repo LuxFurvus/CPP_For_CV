@@ -1,0 +1,5 @@
+<resources>
+    <dimen name="screen_spacing">8dp</dimen>
+    <dimen name="section_spacing">10dp</dimen>
+    <dimen name="bottom_spacing">24dp</dimen>
+</resources>
