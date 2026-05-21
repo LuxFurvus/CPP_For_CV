@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">RandoGen</string>
+
+    <string name="label_rolls">Roll(s):</string>
+    <string name="label_dc">DC:</string>
+    <string name="label_successes">Successes:</string>
+    <string name="label_sum">Sum:</string>
+    <string name="label_results">Results:</string>
+    <string name="label_plus">+</string>
+    <string name="label_minus">-</string>
+
+    <string name="label_dice_number">Dice Num:</string>
+    <string name="label_side_number">Side Num:</string>
+    <string name="label_difficulty_check">Difficulty:</string>
+
+    <string name="label_roll">ROLL</string>
+
+    <string name="label_check_explode_tens">Ex10</string>
+    <string name="label_check_explode_ones">Ex01</string>
+
+    <string name="data_empty">---</string>
+
+    <string name="title_main_menu">Main Menu</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_world_of_darkness">World of Darkness</string>
+    <string name="title_roll_n_keep"><![CDATA[Roll & Keep]]></string>
+    <string name="title_dnd"><![CDATA[D&D]]></string>
+
+    <string name="label_rnk_keep">K</string>
+    <string name="label_rnk_roll">R</string>
+    <string name="label_modifier">Mod:</string>
+
+    <string name="label_dark_theme">Dark Theme</string>
+    <string name="label_manual_input">Manual Input</string>
+    <string name="label_version">Version: 2.5</string>
+    <string name="label_roll_cooldown_ms">Roll Cooldown (ms)</string>
+
+</resources>

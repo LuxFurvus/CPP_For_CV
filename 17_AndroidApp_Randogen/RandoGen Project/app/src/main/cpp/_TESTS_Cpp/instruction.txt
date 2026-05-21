@@ -1,0 +1,10 @@
+
+Full Rebuild:
+clear; rm -rf build; cmake -S . -B build; cmake --build build -j; ./build/RandoGenTests
+
+Simple Rerun:
+clear; cmake --build build -j; ./build/RandoGenTests
+
+clear; g++ -std=c++17 -O2 -o TestApp ../SortedRollsMaker.cpp ../RollAndKeepChanceCounter.cpp ../RollAndKeepRulesLib.cpp TestGround.cpp; ./TestApp; rm -rf TestApp
+
+clear; g++ -std=c++17 -O2 -o TestApp ../WodCpp/WodChanceCounter.cpp TestGround.cpp; ./TestApp; rm -rf TestApp

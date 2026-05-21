@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "make-debug",
+      "type": "shell",
+      "command": "make",
+      "args": [
+        "debug",
+        "MODULE=${input:moduleName}"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "moduleName",
+      "type": "promptString",
+      "description": "Enter module name for debug",
+      "default": "YourModuleName"
+    }
+  ]
+}
