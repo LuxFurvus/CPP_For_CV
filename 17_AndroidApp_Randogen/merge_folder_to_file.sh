@@ -6,10 +6,12 @@
 
 
 TargetDirs=(
-    "D:\ForCPP\CPP_For_CV\17_AndroidApp_Randogen\RandoGen Project\app\src\main\java\com\example\randogen\Common"
 )
 
 TargetFiles=(
+	"D:\ForCPP\CPP_For_CV\17_AndroidApp_Randogen\RandoGen Project\cppTest\packages.config"
+	"D:\ForCPP\CPP_For_CV\17_AndroidApp_Randogen\RandoGen Project\cppTest\RandogenCppTests.sln"
+	"D:\ForCPP\CPP_For_CV\17_AndroidApp_Randogen\RandoGen Project\cppTest\RandogenCppTests.vcxproj"
 )
 
 ExcludeDirs=("includes" "BlueprintBlockBuilder")
@@ -17,6 +19,28 @@ ExcludeDirs=("includes" "BlueprintBlockBuilder")
 ExcludeFiles=("TestUtilities.h" "CMakeLists.txt")
 
 ExcludeExtensions=(".test" ".test.cpp" ".mk" ".txt" ".webp")
+
+# ========================
+# Keep terminal window open
+# ========================
+
+PauseBeforeExit() {
+    local ExitCode="$?"
+
+    echo ""
+    if [ "$ExitCode" -eq 0 ]; then
+        echo "Script finished successfully."
+    else
+        echo "Script finished with error code: $ExitCode"
+    fi
+
+    echo ""
+    read -r -p "Press Enter to close this window..." _
+
+    exit "$ExitCode"
+}
+
+trap PauseBeforeExit EXIT
 
 # ========================
 # Validate targets
